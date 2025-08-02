@@ -1,0 +1,21 @@
+{
+  "name": "webqualityanalyzer",
+  "version": "1.0.0",
+  "description": "Web quality analysis browser extension for developers and QA professionals",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrianjiga/WebQualityAnalyzer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/adrianjiga/WebQualityAnalyzer/issues"
+  },
+  "homepage": "https://github.com/adrianjiga/WebQualityAnalyzer#readme"
+}
