@@ -10,15 +10,25 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write 'src/**/*.{ts,js,json,css,html}'",
+    "format:check": "prettier --check 'src/**/*.{ts,js,json,css,html}'"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/adrianjiga/WebQualityAnalyzer.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "web",
+    "quality",
+    "analysis",
+    "browser",
+    "extension",
+    "developer",
+    "QA"
+  ],
+  "author": "Adrian Jiga",
+  "license": "MIT",
   "type": "module",
   "bugs": {
     "url": "https://github.com/adrianjiga/WebQualityAnalyzer/issues"
@@ -30,9 +40,14 @@
     "@types/chrome": "^0.1.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "copy-webpack-plugin": "^13.0.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "prettier": "^3.6.2",
     "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
