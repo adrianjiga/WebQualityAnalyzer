@@ -91,7 +91,7 @@ async function runAnalysis(): Promise<void> {
       displayResults(response);
       exportButton.disabled = false;
     }
-  } catch (error) {
+  } catch (_error) {
     showError("Could not analyze page. Make sure you're on a valid webpage.");
   } finally {
     analyzeButton.disabled = false;
