@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-function performQualityAnalysis(): AnalysisResult {
+export function performQualityAnalysis(): AnalysisResult {
   const accessibility = analyzeAccessibility();
   const seo = analyzeSEO();
   const performance = analyzePerformance();
@@ -59,7 +59,7 @@ function performQualityAnalysis(): AnalysisResult {
   };
 }
 
-function analyzeAccessibility(): CategoryResult {
+export function analyzeAccessibility(): CategoryResult {
   const issues: Issue[] = [];
   const suggestions: string[] = [];
   let score = 100;
@@ -141,7 +141,7 @@ function analyzeAccessibility(): CategoryResult {
   return { score: Math.max(0, score), issues, suggestions };
 }
 
-function analyzeSEO(): CategoryResult {
+export function analyzeSEO(): CategoryResult {
   const issues: Issue[] = [];
   const suggestions: string[] = [];
   let score = 100;
@@ -241,7 +241,7 @@ function analyzeSEO(): CategoryResult {
   return { score: Math.max(0, score), issues, suggestions };
 }
 
-function analyzePerformance(): CategoryResult {
+export function analyzePerformance(): CategoryResult {
   const issues: Issue[] = [];
   const suggestions: string[] = [];
   let score = 100;

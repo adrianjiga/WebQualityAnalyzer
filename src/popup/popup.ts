@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-async function runAnalysis(): Promise<void> {
+export async function runAnalysis(): Promise<void> {
   const analyzeButton = document.getElementById(
     'analyze-btn'
   ) as HTMLButtonElement;
@@ -99,7 +99,7 @@ async function runAnalysis(): Promise<void> {
   }
 }
 
-function switchTab(tabName: string): void {
+export function switchTab(tabName: string): void {
   // Update tab buttons
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.classList.remove('active');
@@ -113,7 +113,7 @@ function switchTab(tabName: string): void {
   document.getElementById(`${tabName}-tab`)?.classList.add('active');
 }
 
-function updatePageInfo(url: string): void {
+export function updatePageInfo(url: string): void {
   const pageInfo = document.getElementById('page-info') as HTMLDivElement;
   const pageUrl = document.getElementById('page-url') as HTMLDivElement;
 
@@ -121,7 +121,7 @@ function updatePageInfo(url: string): void {
   pageInfo.style.display = 'block';
 }
 
-function showLoadingState(): void {
+export function showLoadingState(): void {
   const overviewTab = document.getElementById('overview-tab') as HTMLDivElement;
   overviewTab.innerHTML = `
     <div class="loading">
@@ -131,7 +131,7 @@ function showLoadingState(): void {
   `;
 }
 
-function showError(message: string): void {
+export function showError(message: string): void {
   const overviewTab = document.getElementById('overview-tab') as HTMLDivElement;
   overviewTab.innerHTML = `
     <div class="empty-state">
@@ -141,7 +141,7 @@ function showError(message: string): void {
   `;
 }
 
-function displayResults(result: AnalysisResult): void {
+export function displayResults(result: AnalysisResult): void {
   displayOverview(result);
   displayAccessibility(result.categories.accessibility);
   displaySEO(result.categories.seo);
@@ -221,7 +221,7 @@ function displayPerformance(category: CategoryResult): void {
   displayCategoryContent(performanceTab, category, '⚡');
 }
 
-function displayCategoryContent(
+export function displayCategoryContent(
   container: HTMLDivElement,
   category: CategoryResult,
   icon: string
@@ -290,14 +290,14 @@ function displayCategoryContent(
   container.innerHTML = content;
 }
 
-function getScoreColor(score: number): string {
+export function getScoreColor(score: number): string {
   if (score >= 90) return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
   if (score >= 80) return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
   if (score >= 60) return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
   return 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)';
 }
 
-function exportResults(analysis: AnalysisResult): void {
+export function exportResults(analysis: AnalysisResult): void {
   const data = {
     ...analysis,
     exportedAt: new Date().toISOString(),
