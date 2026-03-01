@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "WebQualityAnalyzer",
+  "version": "1.0.0",
+  "description": "Web quality analysis browser extension for developers and QA professionals",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "background": {
+    "service_worker": "background.bundle.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.bundle.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "WebQualityAnalyzer"
+  }
+}
