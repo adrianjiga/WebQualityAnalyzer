@@ -5,6 +5,7 @@
 describe('Background Script', () => {
   function loadBackground(): void {
     jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('../../src/background/background');
     });
   }
