@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { 
+      width: 450px; 
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: #f8f9fa;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .controls {
+      padding: 20px;
+      background: white;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    button { 
+      flex: 1;
+      padding: 12px; 
+      background: #007cba;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      background: #6c757d !important;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #545b62 !important;
+    }
+    .tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      border-bottom-color: #007cba;
+      color: #007cba;
+      background: #f8f9fa;
+    }
+    .tab:hover {
+      background: #f8f9fa;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      background: white;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .score-card {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .score-number {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .score-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .metric-card {
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .metric-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .metric-title {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .metric-count {
+      background: #dc3545;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .metric-count.success {
+      background: #28a745;
+    }
+    .issue-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .issue-item {
+      padding: 8px 12px;
+      margin: 5px 0;
+      background: #f8f9fa;
+      border-left: 4px solid #dc3545;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .suggestion-item {
+      padding: 8px 12px;
+      margin: 5px 0;
+      background: #e7f3ff;
+      border-left: 4px solid #007cba;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6c757d;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007cba;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6c757d;
+    }
+    .page-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .page-url {
+      font-size: 12px;
+      color: #6c757d;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔍 WebQualityAnalyzer</h1>
+  </div>
+  
+  <div class="controls">
+    <div class="btn-group">
+      <button id="analyze-btn">🚀 Analyze Page</button>
+      <button id="export-btn" class="btn-secondary" disabled>📊 Export</button>
+    </div>
+    <div class="page-info" id="page-info" style="display: none;">
+      <div class="page-url" id="page-url"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="accessibility">A11y</div>
+    <div class="tab" data-tab="seo">SEO</div>
+    <div class="tab" data-tab="performance">Performance</div>
+  </div>
+
+  <div id="overview-tab" class="tab-content active">
+    <div class="empty-state">
+      Click "Analyze Page" to start quality analysis
+    </div>
+  </div>
+
+  <div id="accessibility-tab" class="tab-content">
+    <div class="empty-state">
+      No accessibility data available
+    </div>
+  </div>
+
+  <div id="seo-tab" class="tab-content">
+    <div class="empty-state">
+      No SEO data available
+    </div>
+  </div>
+
+  <div id="performance-tab" class="tab-content">
+    <div class="empty-state">
+      No performance data available
+    </div>
+  </div>
+
+  <script src="popup.bundle.js"></script>
+</body>
+</html>
