@@ -14,7 +14,7 @@ npm run lint         # ESLint on src/ and tests/
 
 To run a single test file:
 ```bash
-npx jest tests/unit/example.test.ts
+npx jest tests/unit/content.test.ts
 ```
 
 ## Architecture
@@ -37,11 +37,17 @@ The content script exposes three analysis functions (`analyzeAccessibility`, `an
 
 ```typescript
 interface AnalysisResult {
-  accessibility: CategoryResult;
-  seo: CategoryResult;
-  performance: CategoryResult;
-  url: string;
-  timestamp: string;
+  score: number;        // 0–100 overall (mean of three categories)
+  pageInfo: {
+    url: string;
+    title: string;
+    timestamp: string;  // ISO 8601
+  };
+  categories: {
+    accessibility: CategoryResult;
+    seo: CategoryResult;
+    performance: CategoryResult;
+  };
 }
 
 interface CategoryResult {
@@ -51,9 +57,10 @@ interface CategoryResult {
 }
 
 interface Issue {
-  type: 'error' | 'warning' | 'info';
+  type: string;         // e.g. 'Missing Alt Text', 'Page Title'
   message: string;
-  element?: string;
+  severity: 'high' | 'medium' | 'low';
+  element?: string;     // CSS selector or src of the offending element
 }
 ```
 
@@ -68,6 +75,36 @@ Webpack copies `src/manifest.json` and `src/popup.html` into `dist/` alongside t
 - **Prettier**: single quotes, 2-space indent, trailing commas (ES5), 80-char print width
 - **Jest coverage threshold**: 80% across branches, functions, lines, and statements
 
+## CI
+
+| Workflow | File | Triggers | Steps |
+|----------|------|----------|-------|
+| CI | `.github/workflows/ci.yml` | push (all branches), PR → main | lint, build |
+| Tests | `.github/workflows/tests.yml` | push (all branches), PR → main | test with coverage |
+
+Actions are pinned to commit SHAs for supply-chain security. Dependabot is configured to keep them up to date weekly.
+
 ## Testing
 
-Tests use `jest-dom` (jsdom environment). Chrome extension APIs (`chrome.*`) are not available in the test environment and must be mocked when writing unit tests for content/popup scripts.
+### Test files
+
+| File | What it covers |
+|------|----------------|
+| `tests/unit/content.test.ts` | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `chrome.runtime.onMessage` listener |
+| `tests/unit/popup.test.ts` | All exported popup UI functions: `switchTab`, `updatePageInfo`, `showLoadingState`, `showError`, `displayResults`, `displayCategoryContent`, `getScoreColor`, `exportResults`, `runAnalysis` |
+| `tests/unit/background.test.ts` | `chrome.runtime.onInstalled` registration and callback |
+
+Coverage baseline (2026-03): **94.69% stmts / 90.81% branches / 86.48% funcs / 94.58% lines** — all above the 80% global threshold.
+
+### Setup
+
+Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (loaded via `setupFilesAfterEnv`). All `chrome.runtime` and `chrome.tabs` methods are `jest.fn()` so any module that calls them at import time won't throw in jsdom.
+
+### Key patterns
+
+- **Module load-time side effects** (background.ts, content.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
+- **jsdom quirks**:
+  - `document.head.innerHTML = '...'` removes any existing `<title>` — always set `document.title` *after* assigning `head.innerHTML`.
+  - `img.naturalWidth` / `img.naturalHeight` are always `0` — use `Object.defineProperty` with a getter to simulate large images.
+  - `Blob.prototype.text()` is not implemented — spy on `JSON.stringify` to inspect data passed to the Blob constructor.
+  - `URL.createObjectURL` / `URL.revokeObjectURL` are not implemented — mock both on `global.URL` before testing `exportResults`.
