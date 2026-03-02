@@ -321,10 +321,11 @@ export function analyzePerformance(): CategoryResult {
     score -= Math.min(10, externalLinksWithoutRel.length);
   }
 
-  // Performance suggestions
-  suggestions.push('Consider using a Content Delivery Network (CDN) for static assets');
-  suggestions.push('Enable gzip compression on your server');
-  suggestions.push('Minify CSS and JavaScript files');
+  if (score < 100) {
+    suggestions.push('Consider using a Content Delivery Network (CDN) for static assets');
+    suggestions.push('Enable gzip compression on your server');
+    suggestions.push('Minify CSS and JavaScript files');
+  }
 
   return { score: Math.max(0, score), issues, suggestions };
 }
