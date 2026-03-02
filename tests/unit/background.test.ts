@@ -26,7 +26,7 @@ describe('Background Script', () => {
     expect(typeof listener).toBe('function');
   });
 
-  it('logs the installation message when the onInstalled callback fires', () => {
+  it('does not log to console when the onInstalled callback fires', () => {
     const consoleSpy = jest
       .spyOn(console, 'log')
       .mockImplementation(() => {});
@@ -37,23 +37,19 @@ describe('Background Script', () => {
       .mock.calls[0][0] as () => void;
     listener();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'WebQualityAnalyzer extension installed'
-    );
+    expect(consoleSpy).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
   });
 
-  it('logs the module-load message when the script is first evaluated', () => {
+  it('does not log to console when the module is loaded', () => {
     const consoleSpy = jest
       .spyOn(console, 'log')
       .mockImplementation(() => {});
 
     loadBackground();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'WebQualityAnalyzer background script loaded'
-    );
+    expect(consoleSpy).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
   });

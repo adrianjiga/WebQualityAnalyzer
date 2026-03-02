@@ -1,5 +1,4 @@
 // Content script for WebQualityAnalyzer extension
-console.log('WebQualityAnalyzer content script loaded');
 
 export interface AnalysisResult {
   score: number;
@@ -108,8 +107,7 @@ export function analyzeAccessibility(): CategoryResult {
   }
 
   // Check for focus indicators
-  const interactiveElements = document.querySelectorAll('button, a, input, select, textarea');
-  if (interactiveElements.length > 0) {
+  if (document.querySelector('button, a, input, select, textarea') !== null) {
     suggestions.push('Ensure all interactive elements have visible focus indicators');
   }
 
@@ -330,14 +328,3 @@ export function analyzePerformance(): CategoryResult {
   return { score: Math.max(0, score), issues, suggestions };
 }
 
-// Initialize on page load
-function initializeQualityAnalysis(): void {
-  console.log('WebQualityAnalyzer initialized for:', window.location.href);
-}
-
-// Run when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeQualityAnalysis);
-} else {
-  initializeQualityAnalysis();
-}
