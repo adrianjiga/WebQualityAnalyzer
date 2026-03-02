@@ -1,30 +1,5 @@
 // Popup script for WebQualityAnalyzer extension
-interface AnalysisResult {
-  score: number;
-  pageInfo: {
-    url: string;
-    title: string;
-    timestamp: string;
-  };
-  categories: {
-    accessibility: CategoryResult;
-    seo: CategoryResult;
-    performance: CategoryResult;
-  };
-}
-
-interface CategoryResult {
-  score: number;
-  issues: Issue[];
-  suggestions: string[];
-}
-
-interface Issue {
-  type: string;
-  message: string;
-  severity: 'high' | 'medium' | 'low';
-  element?: string;
-}
+import type { AnalysisResult, CategoryResult } from '../content/content';
 
 let currentAnalysis: AnalysisResult | null = null;
 

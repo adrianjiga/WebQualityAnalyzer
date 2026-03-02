@@ -1,7 +1,7 @@
 // Content script for WebQualityAnalyzer extension
 console.log('WebQualityAnalyzer content script loaded');
 
-interface AnalysisResult {
+export interface AnalysisResult {
   score: number;
   pageInfo: {
     url: string;
@@ -15,13 +15,13 @@ interface AnalysisResult {
   };
 }
 
-interface CategoryResult {
+export interface CategoryResult {
   score: number;
   issues: Issue[];
   suggestions: string[];
 }
 
-interface Issue {
+export interface Issue {
   type: string;
   message: string;
   severity: 'high' | 'medium' | 'low';
