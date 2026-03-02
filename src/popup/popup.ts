@@ -196,6 +196,15 @@ function displayPerformance(category: CategoryResult): void {
   displayCategoryContent(performanceTab, category, '⚡');
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function displayCategoryContent(
   container: HTMLDivElement,
   category: CategoryResult,
@@ -230,10 +239,10 @@ export function displayCategoryContent(
             .map(
               (issue) => `
             <li class="issue-item">
-              <strong>${issue.type}:</strong> ${issue.message}
+              <strong>${escapeHtml(issue.type)}:</strong> ${escapeHtml(issue.message)}
               ${
                 issue.element
-                  ? `<br><small style="color: #6c757d;">Element: ${issue.element}</small>`
+                  ? `<br><small style="color: #6c757d;">Element: ${escapeHtml(issue.element)}</small>`
                   : ''
               }
             </li>
@@ -253,7 +262,7 @@ export function displayCategoryContent(
           ${category.suggestions
             .map(
               (suggestion) => `
-            <li class="suggestion-item">${suggestion}</li>
+            <li class="suggestion-item">${escapeHtml(suggestion)}</li>
           `
             )
             .join('')}
