@@ -577,7 +577,22 @@ describe('analyzePerformance', () => {
     expect(result.issues).toHaveLength(0);
   });
 
-  it('always includes three generic performance suggestions', () => {
+  it('returns no suggestions for a perfectly clean page (score 100)', () => {
+    const result = analyzePerformance();
+    expect(result.suggestions).not.toContain(
+      'Consider using a Content Delivery Network (CDN) for static assets'
+    );
+    expect(result.suggestions).not.toContain('Enable gzip compression on your server');
+    expect(result.suggestions).not.toContain('Minify CSS and JavaScript files');
+  });
+
+  it('includes three generic performance suggestions when the page has issues', () => {
+    // 4 images without a loading attribute trigger the Lazy Loading issue (score < 100)
+    for (let i = 0; i < 4; i++) {
+      const img = document.createElement('img');
+      img.src = 'x.jpg';
+      document.body.appendChild(img);
+    }
     const result = analyzePerformance();
     expect(result.suggestions).toContain(
       'Consider using a Content Delivery Network (CDN) for static assets'
