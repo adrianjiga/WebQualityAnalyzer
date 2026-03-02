@@ -1,7 +1,6 @@
 // Content script for WebQualityAnalyzer extension
-console.log('WebQualityAnalyzer content script loaded');
 
-interface AnalysisResult {
+export interface AnalysisResult {
   score: number;
   pageInfo: {
     url: string;
@@ -15,13 +14,13 @@ interface AnalysisResult {
   };
 }
 
-interface CategoryResult {
+export interface CategoryResult {
   score: number;
   issues: Issue[];
   suggestions: string[];
 }
 
-interface Issue {
+export interface Issue {
   type: string;
   message: string;
   severity: 'high' | 'medium' | 'low';
@@ -108,8 +107,7 @@ export function analyzeAccessibility(): CategoryResult {
   }
 
   // Check for focus indicators
-  const interactiveElements = document.querySelectorAll('button, a, input, select, textarea');
-  if (interactiveElements.length > 0) {
+  if (document.querySelector('button, a, input, select, textarea') !== null) {
     suggestions.push('Ensure all interactive elements have visible focus indicators');
   }
 
@@ -321,22 +319,12 @@ export function analyzePerformance(): CategoryResult {
     score -= Math.min(10, externalLinksWithoutRel.length);
   }
 
-  // Performance suggestions
-  suggestions.push('Consider using a Content Delivery Network (CDN) for static assets');
-  suggestions.push('Enable gzip compression on your server');
-  suggestions.push('Minify CSS and JavaScript files');
+  if (score < 100) {
+    suggestions.push('Consider using a Content Delivery Network (CDN) for static assets');
+    suggestions.push('Enable gzip compression on your server');
+    suggestions.push('Minify CSS and JavaScript files');
+  }
 
   return { score: Math.max(0, score), issues, suggestions };
 }
 
-// Initialize on page load
-function initializeQualityAnalysis(): void {
-  console.log('WebQualityAnalyzer initialized for:', window.location.href);
-}
-
-// Run when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeQualityAnalysis);
-} else {
-  initializeQualityAnalysis();
-}

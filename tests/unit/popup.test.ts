@@ -10,30 +10,7 @@ import {
   runAnalysis,
 } from '../../src/popup/popup';
 
-// ─── Type definitions ─────────────────────────────────────────────────────────
-// Mirrors the interfaces defined in popup.ts (not exported from source).
-interface Issue {
-  type: string;
-  message: string;
-  severity: 'high' | 'medium' | 'low';
-  element?: string;
-}
-
-interface CategoryResult {
-  score: number;
-  issues: Issue[];
-  suggestions: string[];
-}
-
-interface AnalysisResult {
-  score: number;
-  pageInfo: { url: string; title: string; timestamp: string };
-  categories: {
-    accessibility: CategoryResult;
-    seo: CategoryResult;
-    performance: CategoryResult;
-  };
-}
+import type { AnalysisResult, CategoryResult, Issue } from '../../src/content/content';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function buildCategory(

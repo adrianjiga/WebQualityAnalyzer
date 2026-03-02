@@ -11,6 +11,7 @@ A Chrome Manifest V3 browser extension that audits web pages for accessibility, 
 - **SEO** — checks page title length, meta description, H1 presence, canonical URL, and Open Graph tags
 - **Performance** — flags oversized images, missing lazy-loading, excessive external resources, and inline styles
 - **Overall score** — 0–100 weighted average across all three categories
+- **Perfect Score** — each category shows a "Perfect Score!" banner when it passes all checks with no suggestions
 - **Export** — download the full analysis as a JSON file
 
 ## Development setup
@@ -54,6 +55,8 @@ The extension has three isolated execution contexts, each compiled to a separate
 | `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — sends messages to content script, renders results |
 
 **Communication flow:** Popup → Chrome message API → Content Script → `AnalysisResult` → Popup renders
+
+Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are exported from `content.ts` and consumed via `import type` in `popup.ts` — erased before bundling, zero runtime overhead.
 
 ## CI
 
