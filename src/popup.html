@@ -3,15 +3,25 @@
 <head>
   <meta charset="utf-8">
   <style>
-    body { 
-      width: 450px; 
+    /* Palette: Vercel Geist + Stripe Sail
+       Header:    #0a2540  (Stripe deep navy)
+       Primary:   #0070f3  (Vercel blue)
+       Surface:   #ffffff
+       Body bg:   #f6f9fc  (Stripe light)
+       Border:    #dde3ea
+       Text:      #0a2540 / #697b8f
+       Score good:    #059669  Score ok:  #2563eb
+       Score warn:    #b45309  Score bad: #dc2626
+    */
+    body {
+      width: 450px;
       min-height: 500px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       margin: 0;
-      background: #f8f9fa;
+      background: #f6f9fc;
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #0a2540;
       color: white;
       padding: 20px;
       text-align: center;
@@ -20,47 +30,46 @@
       margin: 0;
       font-size: 18px;
       font-weight: 600;
+      letter-spacing: -0.01em;
     }
     .controls {
       padding: 20px;
       background: white;
-      border-bottom: 1px solid #e9ecef;
+      border-bottom: 1px solid #dde3ea;
     }
     .btn-group {
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
     }
-    button { 
+    button {
       flex: 1;
-      padding: 12px; 
-      background: #007cba;
+      padding: 12px;
+      background: #0070f3;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-weight: 500;
-      transition: all 0.2s;
+      transition: background 0.15s;
     }
     button:hover:not(:disabled) {
-      background: #0056b3;
-      transform: translateY(-1px);
+      background: #005cc5;
     }
     button:disabled {
-      background: #6c757d;
+      background: #a0aec0;
       cursor: not-allowed;
-      transform: none;
     }
     .btn-secondary {
-      background: #6c757d !important;
+      background: #697b8f !important;
     }
     .btn-secondary:hover:not(:disabled) {
-      background: #545b62 !important;
+      background: #546374 !important;
     }
     .tabs {
       display: flex;
       background: white;
-      border-bottom: 1px solid #e9ecef;
+      border-bottom: 1px solid #dde3ea;
     }
     .tab {
       flex: 1;
@@ -70,15 +79,17 @@
       border-bottom: 3px solid transparent;
       font-size: 13px;
       font-weight: 500;
-      transition: all 0.2s;
+      color: #697b8f;
+      transition: color 0.15s, background 0.15s;
     }
     .tab.active {
-      border-bottom-color: #007cba;
-      color: #007cba;
-      background: #f8f9fa;
+      border-bottom-color: #0070f3;
+      color: #0070f3;
+      background: #f6f9fc;
     }
     .tab:hover {
-      background: #f8f9fa;
+      background: #f6f9fc;
+      color: #0a2540;
     }
     .tab-content {
       display: none;
@@ -91,10 +102,9 @@
       display: block;
     }
     .score-card {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
       color: white;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 8px;
       text-align: center;
       margin-bottom: 20px;
     }
@@ -105,36 +115,33 @@
     }
     .score-label {
       font-size: 14px;
-      opacity: 0.9;
+      opacity: 0.88;
     }
     .metric-card {
       background: white;
-      border: 1px solid #e9ecef;
+      border: 1px solid #dde3ea;
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .metric-header {
       display: flex;
-      justify-content: between;
+      justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
     }
     .metric-title {
       font-weight: 600;
       font-size: 14px;
+      color: #0a2540;
     }
     .metric-count {
-      background: #dc3545;
       color: white;
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 12px;
       font-size: 12px;
       font-weight: 500;
-    }
-    .metric-count.success {
-      background: #28a745;
+      white-space: nowrap;
     }
     .issue-list {
       list-style: none;
@@ -144,27 +151,29 @@
     .issue-item {
       padding: 8px 12px;
       margin: 5px 0;
-      background: #f8f9fa;
-      border-left: 4px solid #dc3545;
+      background: #fef2f2;
+      border-left: 3px solid #dc2626;
       border-radius: 4px;
       font-size: 13px;
+      color: #0a2540;
     }
     .suggestion-item {
       padding: 8px 12px;
       margin: 5px 0;
-      background: #e7f3ff;
-      border-left: 4px solid #007cba;
+      background: #eff6ff;
+      border-left: 3px solid #0070f3;
       border-radius: 4px;
       font-size: 13px;
+      color: #0a2540;
     }
     .loading {
       text-align: center;
       padding: 40px;
-      color: #6c757d;
+      color: #697b8f;
     }
     .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #007cba;
+      border: 3px solid #dde3ea;
+      border-top: 3px solid #0070f3;
       border-radius: 50%;
       width: 30px;
       height: 30px;
@@ -178,30 +187,31 @@
     .empty-state {
       text-align: center;
       padding: 40px 20px;
-      color: #6c757d;
+      color: #697b8f;
     }
     .page-info {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 8px;
+      background: #f6f9fc;
+      padding: 12px 15px;
+      border-radius: 6px;
       margin-bottom: 15px;
+      border: 1px solid #dde3ea;
     }
     .page-url {
       font-size: 12px;
-      color: #6c757d;
+      color: #697b8f;
       word-break: break-all;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🔍 WebQualityAnalyzer</h1>
+    <h1>Web Quality Analyzer</h1>
   </div>
   
   <div class="controls">
     <div class="btn-group">
-      <button id="analyze-btn">🚀 Analyze Page</button>
-      <button id="export-btn" class="btn-secondary" disabled>📊 Export</button>
+      <button id="analyze-btn">Analyze Page</button>
+      <button id="export-btn" class="btn-secondary" disabled>Export</button>
     </div>
     <div class="page-info" id="page-info" style="display: none;">
       <div class="page-url" id="page-url"></div>
