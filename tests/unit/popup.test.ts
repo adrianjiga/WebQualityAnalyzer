@@ -49,11 +49,13 @@ function setupPopupDOM(): void {
     '<div class="tab active" data-tab="overview">Overview</div>' +
     '<div class="tab" data-tab="accessibility">A11y</div>' +
     '<div class="tab" data-tab="seo">SEO</div>' +
-    '<div class="tab" data-tab="performance">Performance</div>' +
+    '<div class="tab" data-tab="performance">Perf</div>' +
+    '<div class="tab" data-tab="settings">Settings</div>' +
     '<div id="overview-tab" class="tab-content active"></div>' +
     '<div id="accessibility-tab" class="tab-content"></div>' +
     '<div id="seo-tab" class="tab-content"></div>' +
-    '<div id="performance-tab" class="tab-content"></div>';
+    '<div id="performance-tab" class="tab-content"></div>' +
+    '<div id="settings-tab" class="tab-content"></div>';
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -136,6 +138,18 @@ describe('switchTab', () => {
     switchTab('overview');
     expect(document.getElementById('overview-tab')?.classList.contains('active')).toBe(true);
     expect(document.getElementById('seo-tab')?.classList.contains('active')).toBe(false);
+  });
+
+  it('switches to the settings tab', () => {
+    switchTab('settings');
+    expect(document.getElementById('settings-tab')?.classList.contains('active')).toBe(true);
+    expect(document.querySelector('[data-tab="settings"]')?.classList.contains('active')).toBe(true);
+  });
+
+  it('shows only one active panel after switching to settings', () => {
+    switchTab('settings');
+    expect(document.querySelectorAll('.tab-content.active')).toHaveLength(1);
+    expect(document.querySelectorAll('.tab.active')).toHaveLength(1);
   });
 });
 
