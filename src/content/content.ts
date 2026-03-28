@@ -113,11 +113,14 @@ export function analyzeAccessibility(): CategoryResult {
     (img) => !img.alt || img.alt.trim() === ''
   );
   if (imagesWithoutAlt.length > 0) {
+    const firstImg = imagesWithoutAlt[0];
     issues.push({
       type: 'Missing Alt Text',
       message: `${imagesWithoutAlt.length} images missing alt text`,
       severity: 'high',
-      element: imagesWithoutAlt[0]?.src || 'Unknown image'
+      element: firstImg?.src || 'Unknown image',
+      selector: firstImg ? getCssSelector(firstImg) : undefined,
+      htmlSnippet: firstImg ? getHtmlSnippet(firstImg) : undefined,
     });
     suggestions.push('Add descriptive alt text to all images for screen readers');
     score -= Math.min(25, imagesWithoutAlt.length * 3);
@@ -134,11 +137,14 @@ export function analyzeAccessibility(): CategoryResult {
     return !label && !ariaLabel;
   });
   if (inputsWithoutLabels.length > 0) {
+    const firstInput = inputsWithoutLabels[0] as Element;
     issues.push({
       type: 'Form Accessibility',
       message: `${inputsWithoutLabels.length} form inputs without labels`,
       severity: 'high',
-      element: `${inputsWithoutLabels[0]?.tagName} element`
+      element: `${inputsWithoutLabels[0]?.tagName} element`,
+      selector: firstInput ? getCssSelector(firstInput) : undefined,
+      htmlSnippet: firstInput ? getHtmlSnippet(firstInput) : undefined,
     });
     suggestions.push('Add labels or aria-label attributes to all form inputs');
     score -= Math.min(20, inputsWithoutLabels.length * 4);
@@ -294,11 +300,14 @@ export function analyzePerformance(): CategoryResult {
     return img.naturalWidth > 1920 || img.naturalHeight > 1080;
   });
   if (largeImages.length > 0) {
+    const firstLarge = largeImages[0];
     issues.push({
       type: 'Image Optimization',
       message: `${largeImages.length} images larger than 1920x1080`,
       severity: 'medium',
-      element: largeImages[0]?.src || 'Unknown image'
+      element: firstLarge?.src || 'Unknown image',
+      selector: firstLarge ? getCssSelector(firstLarge) : undefined,
+      htmlSnippet: firstLarge ? getHtmlSnippet(firstLarge) : undefined,
     });
     suggestions.push('Optimize large images and use appropriate formats (WebP, AVIF)');
     score -= Math.min(20, largeImages.length * 3);

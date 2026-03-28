@@ -118,6 +118,29 @@ describe('analyzeAccessibility', () => {
       expect(issue?.element).toBe('http://example.com/photo.jpg');
     });
 
+    it('sets selector on the Missing Alt Text issue', () => {
+      const img = document.createElement('img');
+      img.src = 'test.jpg';
+      document.body.appendChild(img);
+      const issue = analyzeAccessibility().issues.find(
+        (i) => i.type === 'Missing Alt Text'
+      );
+      expect(issue?.selector).toBeDefined();
+      expect(typeof issue?.selector).toBe('string');
+      expect((issue?.selector ?? '').length).toBeGreaterThan(0);
+    });
+
+    it('sets htmlSnippet on the Missing Alt Text issue', () => {
+      const img = document.createElement('img');
+      img.src = 'test.jpg';
+      document.body.appendChild(img);
+      const issue = analyzeAccessibility().issues.find(
+        (i) => i.type === 'Missing Alt Text'
+      );
+      expect(issue?.htmlSnippet).toBeDefined();
+      expect(issue?.htmlSnippet).toContain('img');
+    });
+
     it('reports the correct count when multiple images lack alt text', () => {
       document.body.innerHTML = Array(3).fill('<img src="x.jpg">').join('');
       const issue = analyzeAccessibility().issues.find(
@@ -211,6 +234,29 @@ describe('analyzeAccessibility', () => {
         (i) => i.type === 'Form Accessibility'
       );
       expect(issue?.element).toContain('INPUT');
+    });
+
+    it('sets selector on the Form Accessibility issue', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      document.body.appendChild(input);
+      const issue = analyzeAccessibility().issues.find(
+        (i) => i.type === 'Form Accessibility'
+      );
+      expect(issue?.selector).toBeDefined();
+      expect(typeof issue?.selector).toBe('string');
+      expect((issue?.selector ?? '').length).toBeGreaterThan(0);
+    });
+
+    it('sets htmlSnippet on the Form Accessibility issue', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      document.body.appendChild(input);
+      const issue = analyzeAccessibility().issues.find(
+        (i) => i.type === 'Form Accessibility'
+      );
+      expect(issue?.htmlSnippet).toBeDefined();
+      expect(issue?.htmlSnippet).toContain('input');
     });
   });
 
@@ -646,6 +692,25 @@ describe('analyzePerformance', () => {
         (i) => i.type === 'Image Optimization'
       );
       expect(issue?.element).toBe('http://example.com/big.jpg');
+    });
+
+    it('sets selector on the Image Optimization issue', () => {
+      addImageWithDimensions(2000, 1200);
+      const issue = analyzePerformance().issues.find(
+        (i) => i.type === 'Image Optimization'
+      );
+      expect(issue?.selector).toBeDefined();
+      expect(typeof issue?.selector).toBe('string');
+      expect((issue?.selector ?? '').length).toBeGreaterThan(0);
+    });
+
+    it('sets htmlSnippet on the Image Optimization issue', () => {
+      addImageWithDimensions(2000, 1200);
+      const issue = analyzePerformance().issues.find(
+        (i) => i.type === 'Image Optimization'
+      );
+      expect(issue?.htmlSnippet).toBeDefined();
+      expect(issue?.htmlSnippet).toContain('img');
     });
 
     it('adds a suggestion to optimise large images', () => {
