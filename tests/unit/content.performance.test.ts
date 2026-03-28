@@ -1,70 +1,12 @@
 import { analyzePerformance } from '../../src/content/analyzers/performance';
-
-// ─── DOM helpers ──────────────────────────────────────────────────────────────
-// jsdom always reports naturalWidth/naturalHeight as 0; override per element.
-// loading="lazy" prevents the unrelated lazy-loading check from firing when
-// many of these images are added in the same test.
-function addImageWithDimensions(
-  naturalWidth: number,
-  naturalHeight: number,
-  src = 'http://example.com/image.jpg'
-): HTMLImageElement {
-  const img = document.createElement('img');
-  img.src = src;
-  img.setAttribute('loading', 'lazy');
-  Object.defineProperty(img, 'naturalWidth', {
-    get: () => naturalWidth,
-    configurable: true,
-  });
-  Object.defineProperty(img, 'naturalHeight', {
-    get: () => naturalHeight,
-    configurable: true,
-  });
-  document.body.appendChild(img);
-  return img;
-}
-
-function appendImgs(count: number, src = 'x.jpg'): void {
-  for (let i = 0; i < count; i++) {
-    const img = document.createElement('img');
-    img.src = src;
-    document.body.appendChild(img);
-  }
-}
-
-function appendSpansWithStyle(count: number): void {
-  for (let i = 0; i < count; i++) {
-    const span = document.createElement('span');
-    span.style.color = 'red';
-    document.body.appendChild(span);
-  }
-}
-
-function appendExternalScripts(count: number): void {
-  for (let i = 0; i < count; i++) {
-    const script = document.createElement('script');
-    script.src = 'http://cdn.example.com/lib.js';
-    document.head.appendChild(script);
-  }
-}
-
-function appendExternalLinks(count: number): void {
-  for (let i = 0; i < count; i++) {
-    const link = document.createElement('link');
-    link.setAttribute('href', 'http://cdn.example.com/style.css');
-    document.head.appendChild(link);
-  }
-}
-
-function appendExternalAnchors(count: number, withRel = false): void {
-  for (let i = 0; i < count; i++) {
-    const a = document.createElement('a');
-    a.href = 'http://example.com';
-    a.textContent = 'link';
-    if (withRel) a.setAttribute('rel', 'noopener noreferrer');
-    document.body.appendChild(a);
-  }
-}
+import {
+  addImageWithDimensions,
+  appendImgs,
+  appendSpansWithStyle,
+  appendExternalScripts,
+  appendExternalLinks,
+  appendExternalAnchors,
+} from '../helpers/helpers';
 
 beforeEach(() => {
   document.head.replaceChildren();

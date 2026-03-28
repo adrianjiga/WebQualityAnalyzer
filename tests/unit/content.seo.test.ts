@@ -1,26 +1,5 @@
 import { analyzeSEO } from '../../src/content/analyzers/seo';
-
-// ─── DOM helpers ──────────────────────────────────────────────────────────────
-function appendMeta(attrs: Record<string, string>): HTMLMetaElement {
-  const meta = document.createElement('meta');
-  for (const [k, v] of Object.entries(attrs)) meta.setAttribute(k, v);
-  document.head.appendChild(meta);
-  return meta;
-}
-
-function appendLink(attrs: Record<string, string>): HTMLLinkElement {
-  const link = document.createElement('link');
-  for (const [k, v] of Object.entries(attrs)) link.setAttribute(k, v);
-  document.head.appendChild(link);
-  return link;
-}
-
-function appendH1(text = 'Main Heading'): HTMLHeadingElement {
-  const h1 = document.createElement('h1') as HTMLHeadingElement;
-  h1.textContent = text;
-  document.body.appendChild(h1);
-  return h1;
-}
+import { appendMeta, appendLink, appendH1 } from '../helpers/helpers';
 
 beforeEach(() => {
   document.head.replaceChildren();

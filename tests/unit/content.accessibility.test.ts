@@ -1,32 +1,5 @@
 import { analyzeAccessibility } from '../../src/content/analyzers/accessibility';
-
-// ─── DOM helpers ──────────────────────────────────────────────────────────────
-function appendImg(src: string, alt?: string): HTMLImageElement {
-  const img = document.createElement('img');
-  img.src = src;
-  if (alt !== undefined) img.alt = alt;
-  document.body.appendChild(img);
-  return img;
-}
-
-function appendInput(
-  type: string,
-  opts: { id?: string; ariaLabel?: string } = {}
-): HTMLInputElement {
-  const input = document.createElement('input');
-  input.type = type;
-  if (opts.id) input.id = opts.id;
-  if (opts.ariaLabel) input.setAttribute('aria-label', opts.ariaLabel);
-  document.body.appendChild(input);
-  return input;
-}
-
-function appendHeading(level: number, text = 'Heading'): HTMLElement {
-  const h = document.createElement(`h${level}`) as HTMLElement;
-  h.textContent = text;
-  document.body.appendChild(h);
-  return h;
-}
+import { appendImg, appendInput, appendHeading } from '../helpers/helpers';
 
 beforeEach(() => {
   document.head.replaceChildren();
