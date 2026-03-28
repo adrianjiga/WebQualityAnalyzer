@@ -3,6 +3,8 @@ import {
   analyzeSEO,
   analyzePerformance,
   performQualityAnalysis,
+  getCssSelector,
+  getHtmlSnippet,
 } from '../../src/content/content';
 
 // ─── Message-listener capture ─────────────────────────────────────────────────
@@ -960,5 +962,101 @@ describe('Chrome message listener', () => {
       {} as chrome.runtime.MessageSender
     );
     expect(result).toBeUndefined();
+  });
+});
+
+// ─── getCssSelector ───────────────────────────────────────────────────────────
+describe('getCssSelector', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('uses id as anchor and stops ascending', () => {
+    const div = document.createElement('div');
+    div.id = 'hero';
+    const img = document.createElement('img');
+    img.src = 'a.jpg';
+    div.appendChild(img);
+    document.body.appendChild(div);
+    expect(getCssSelector(img)).toBe('div#hero > img');
+  });
+
+  it('includes first class when no id is present', () => {
+    const div = document.createElement('div');
+    div.className = 'card promo';
+    const span = document.createElement('span');
+    div.appendChild(span);
+    document.body.appendChild(div);
+    expect(getCssSelector(span)).toContain('.card');
+  });
+
+  it('adds nth-of-type for an element without id among siblings', () => {
+    const ul = document.createElement('ul');
+    const li1 = document.createElement('li');
+    const li2 = document.createElement('li');
+    li2.className = 'second';
+    ul.appendChild(li1);
+    ul.appendChild(li2);
+    document.body.appendChild(ul);
+    const selector = getCssSelector(li2);
+    expect(selector).toContain('nth-of-type(2)');
+  });
+
+  it('does not add nth-of-type when element is the only sibling of its tag', () => {
+    const div = document.createElement('div');
+    const p = document.createElement('p');
+    const span = document.createElement('span');
+    div.appendChild(p);
+    div.appendChild(span);
+    document.body.appendChild(div);
+    // p is the only <p> sibling, so no nth-of-type needed
+    expect(getCssSelector(p)).not.toContain('nth-of-type');
+  });
+
+  it('falls back to tag name for a root-level element with no id or class', () => {
+    const p = document.createElement('p');
+    document.body.appendChild(p);
+    const selector = getCssSelector(p);
+    expect(selector).toMatch(/p/);
+  });
+
+  it('returns the tag name alone for an orphan element with no parent chain', () => {
+    const orphan = document.createElement('span');
+    expect(getCssSelector(orphan)).toBe('span');
+  });
+});
+
+// ─── getHtmlSnippet ───────────────────────────────────────────────────────────
+describe('getHtmlSnippet', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('returns outerHTML unchanged when shorter than maxLength', () => {
+    const img = document.createElement('img');
+    img.src = 'a.jpg';
+    img.alt = '';
+    document.body.appendChild(img);
+    const snippet = getHtmlSnippet(img);
+    expect(snippet).toBe(img.outerHTML);
+    expect(snippet).not.toContain('\u2026');
+  });
+
+  it('truncates and appends ellipsis when outerHTML exceeds maxLength', () => {
+    const img = document.createElement('img');
+    img.src = 'x'.repeat(200);
+    document.body.appendChild(img);
+    const snippet = getHtmlSnippet(img, 120);
+    expect(snippet.length).toBe(121);
+    expect(snippet.endsWith('\u2026')).toBe(true);
+  });
+
+  it('respects a custom maxLength parameter', () => {
+    const div = document.createElement('div');
+    div.className = 'a b c d e f g h i j k l m n o p q r s t u v w x y z';
+    document.body.appendChild(div);
+    const snippet = getHtmlSnippet(div, 20);
+    expect(snippet.length).toBe(21);
+    expect(snippet.endsWith('\u2026')).toBe(true);
   });
 });
