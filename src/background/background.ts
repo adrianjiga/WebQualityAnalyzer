@@ -1,4 +1,5 @@
 // Background script for WebQualityAnalyzer extension
+import { browser } from '../shared/browser';
 
 // Listen for extension installation
-chrome.runtime.onInstalled.addListener((): void => {});
+browser.runtime.onInstalled.addListener((): void => {});

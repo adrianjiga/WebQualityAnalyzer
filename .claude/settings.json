@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit 2>&1 | head -20"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import os,sys,json; d=json.loads(os.environ.get('CLAUDE_TOOL_INPUT','{}')); f=d.get('file_path',''); sys.stdout.write('ERROR: Do not edit dist/ directly — run npm run build instead\\n') or sys.exit(2) if '/dist/' in f else sys.exit(0)\""
+          }
+        ]
+      }
+    ]
+  }
+}

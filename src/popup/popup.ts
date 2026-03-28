@@ -1,5 +1,6 @@
 // Popup script for WebQualityAnalyzer extension
 import type { AnalysisResult, CategoryResult } from '../content/content';
+import { browser } from '../shared/browser';
 
 let currentAnalysis: AnalysisResult | null = null;
 
@@ -42,14 +43,14 @@ export async function runAnalysis(): Promise<void> {
   ) as HTMLButtonElement;
 
   analyzeButton.disabled = true;
-  analyzeButton.innerHTML = '⏳ Analyzing...';
+  analyzeButton.textContent = 'Analyzing...';
   exportButton.disabled = true;
 
   // Show loading state
   showLoadingState();
 
   try {
-    const [tab] = await chrome.tabs.query({
+    const [tab] = await browser.tabs.query({
       active: true,
       currentWindow: true,
     });
@@ -59,9 +60,9 @@ export async function runAnalysis(): Promise<void> {
       updatePageInfo(tab.url);
 
       // Send message to content script
-      const response = await chrome.tabs.sendMessage(tab.id, {
+      const response = await browser.tabs.sendMessage(tab.id, {
         action: 'analyze',
-      });
+      }) as AnalysisResult;
       currentAnalysis = response;
       displayResults(response);
       exportButton.disabled = false;
@@ -70,7 +71,7 @@ export async function runAnalysis(): Promise<void> {
     showError("Could not analyze page. Make sure you're on a valid webpage.");
   } finally {
     analyzeButton.disabled = false;
-    analyzeButton.innerHTML = '🚀 Analyze Page';
+    analyzeButton.textContent = 'Analyze Page';
   }
 }
 
@@ -136,41 +137,35 @@ function displayOverview(result: AnalysisResult): void {
     <div class="metric-card">
       <div class="metric-header">
         <div class="metric-title">🎯 Accessibility</div>
-        <div class="metric-count ${
-          result.categories.accessibility.issues.length === 0 ? 'success' : ''
-        }">
+        <div class="metric-count" style="background: ${getScoreColor(result.categories.accessibility.score)};">
           ${result.categories.accessibility.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #6c757d;">Score: ${
+      <div style="font-size: 12px; color: #697b8f;">Score: ${
         result.categories.accessibility.score
       }/100</div>
     </div>
-    
+
     <div class="metric-card">
       <div class="metric-header">
         <div class="metric-title">🔍 SEO</div>
-        <div class="metric-count ${
-          result.categories.seo.issues.length === 0 ? 'success' : ''
-        }">
+        <div class="metric-count" style="background: ${getScoreColor(result.categories.seo.score)};">
           ${result.categories.seo.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #6c757d;">Score: ${
+      <div style="font-size: 12px; color: #697b8f;">Score: ${
         result.categories.seo.score
       }/100</div>
     </div>
-    
+
     <div class="metric-card">
       <div class="metric-header">
         <div class="metric-title">⚡ Performance</div>
-        <div class="metric-count ${
-          result.categories.performance.issues.length === 0 ? 'success' : ''
-        }">
+        <div class="metric-count" style="background: ${getScoreColor(result.categories.performance.score)};">
           ${result.categories.performance.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #6c757d;">Score: ${
+      <div style="font-size: 12px; color: #697b8f;">Score: ${
         result.categories.performance.score
       }/100</div>
     </div>
@@ -275,10 +270,10 @@ export function displayCategoryContent(
 }
 
 export function getScoreColor(score: number): string {
-  if (score >= 90) return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
-  if (score >= 80) return 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
-  if (score >= 60) return 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
-  return 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)';
+  if (score >= 90) return '#059669';
+  if (score >= 80) return '#2563eb';
+  if (score >= 60) return '#b45309';
+  return '#dc2626';
 }
 
 export function exportResults(analysis: AnalysisResult): void {

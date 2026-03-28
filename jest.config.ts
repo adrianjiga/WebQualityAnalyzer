@@ -4,6 +4,9 @@ const config: Config = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
+  moduleNameMapper: {
+    'webextension-polyfill': '<rootDir>/tests/__mocks__/webextension-polyfill.ts',
+  },
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/**/*.d.ts",

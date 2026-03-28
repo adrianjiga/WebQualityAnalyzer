@@ -1,5 +1,7 @@
-# Claude Code auto-memory (local only)
+# Claude Code — local-only files (do not commit)
 memory/
+.claude/settings.local.json
+.claude/*.local.md
 
 # Logs
 logs

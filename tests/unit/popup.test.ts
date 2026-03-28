@@ -60,31 +60,31 @@ function setupPopupDOM(): void {
 // getScoreColor
 // ══════════════════════════════════════════════════════════════════════════════
 describe('getScoreColor', () => {
-  it('returns a blue gradient for scores >= 90', () => {
-    expect(getScoreColor(90)).toContain('#4facfe');
-    expect(getScoreColor(100)).toContain('#4facfe');
-    expect(getScoreColor(95)).toContain('#4facfe');
+  it('returns emerald green for scores >= 90', () => {
+    expect(getScoreColor(90)).toBe('#059669');
+    expect(getScoreColor(100)).toBe('#059669');
+    expect(getScoreColor(95)).toBe('#059669');
   });
 
-  it('returns a green gradient for scores >= 80 and < 90', () => {
-    expect(getScoreColor(80)).toContain('#43e97b');
-    expect(getScoreColor(89)).toContain('#43e97b');
+  it('returns blue for scores >= 80 and < 90', () => {
+    expect(getScoreColor(80)).toBe('#2563eb');
+    expect(getScoreColor(89)).toBe('#2563eb');
   });
 
-  it('returns a pink/yellow gradient for scores >= 60 and < 80', () => {
-    expect(getScoreColor(60)).toContain('#fa709a');
-    expect(getScoreColor(79)).toContain('#fa709a');
+  it('returns amber for scores >= 60 and < 80', () => {
+    expect(getScoreColor(60)).toBe('#b45309');
+    expect(getScoreColor(79)).toBe('#b45309');
   });
 
-  it('returns a red gradient for scores below 60', () => {
-    expect(getScoreColor(59)).toContain('#ff6b6b');
-    expect(getScoreColor(0)).toContain('#ff6b6b');
-    expect(getScoreColor(1)).toContain('#ff6b6b');
+  it('returns red for scores below 60', () => {
+    expect(getScoreColor(59)).toBe('#dc2626');
+    expect(getScoreColor(0)).toBe('#dc2626');
+    expect(getScoreColor(1)).toBe('#dc2626');
   });
 
-  it('returns a linear-gradient string for every threshold', () => {
+  it('returns a hex color string for every threshold', () => {
     [0, 60, 80, 90, 100].forEach((score) => {
-      expect(getScoreColor(score)).toMatch(/^linear-gradient/);
+      expect(getScoreColor(score)).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
 });
@@ -346,13 +346,13 @@ describe('displayResults', () => {
     expect(document.getElementById('performance-tab')?.textContent?.length).toBeGreaterThan(0);
   });
 
-  it('shows "0 issues" with success styling when a category has no issues', () => {
+  it('shows the green score color on the badge when a category scores 100', () => {
     const result = buildResult();
     result.categories.accessibility = buildCategory(100, [], []);
     displayResults(result);
     const overview = document.getElementById('overview-tab');
-    // The metric-count should have class "success" for 0 issues
-    expect(overview?.querySelector('.metric-count.success')).not.toBeNull();
+    const badge = overview?.querySelector('.metric-count') as HTMLElement | null;
+    expect(badge?.getAttribute('style')).toContain('#059669');
   });
 });
 
