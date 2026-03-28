@@ -1,4 +1,5 @@
 // Content script for WebQualityAnalyzer extension
+import { browser } from '../shared/browser';
 
 export interface AnalysisResult {
   score: number;
@@ -28,11 +29,11 @@ export interface Issue {
 }
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'analyze') {
-    const result = performQualityAnalysis();
-    sendResponse(result);
+browser.runtime.onMessage.addListener((request: unknown) => {
+  if ((request as { action: string }).action === 'analyze') {
+    return Promise.resolve(performQualityAnalysis());
   }
+  return undefined;
 });
 
 export function performQualityAnalysis(): AnalysisResult {
