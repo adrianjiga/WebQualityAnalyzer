@@ -8,9 +8,8 @@ import {
 // ─── Message-listener capture ─────────────────────────────────────────────────
 type MessageListener = (
   request: { action: string },
-  sender: chrome.runtime.MessageSender,
-  sendResponse: (response: unknown) => void
-) => void;
+  sender: chrome.runtime.MessageSender
+) => Promise<unknown> | undefined;
 
 let capturedMessageListener: MessageListener;
 
@@ -943,29 +942,23 @@ describe('Chrome message listener', () => {
     expect(typeof capturedMessageListener).toBe('function');
   });
 
-  it('calls sendResponse with a full AnalysisResult when action is "analyze"', () => {
-    const sendResponse = jest.fn();
-    capturedMessageListener(
+  it('returns a Promise resolving to a full AnalysisResult when action is "analyze"', async () => {
+    const result = capturedMessageListener(
       { action: 'analyze' },
-      {} as chrome.runtime.MessageSender,
-      sendResponse
+      {} as chrome.runtime.MessageSender
     );
-    expect(sendResponse).toHaveBeenCalledTimes(1);
-    const response = sendResponse.mock.calls[0][0] as ReturnType<
-      typeof performQualityAnalysis
-    >;
+    expect(result).toBeInstanceOf(Promise);
+    const response = (await result) as ReturnType<typeof performQualityAnalysis>;
     expect(response).toHaveProperty('score');
     expect(response).toHaveProperty('pageInfo');
     expect(response).toHaveProperty('categories');
   });
 
-  it('does not call sendResponse for unknown action types', () => {
-    const sendResponse = jest.fn();
-    capturedMessageListener(
+  it('returns undefined for unknown action types', () => {
+    const result = capturedMessageListener(
       { action: 'unknown-action' },
-      {} as chrome.runtime.MessageSender,
-      sendResponse
+      {} as chrome.runtime.MessageSender
     );
-    expect(sendResponse).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
   });
 });
