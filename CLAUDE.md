@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## IMPORTANT
+
+Always ignore files in the .gitignore file unless specifically asked to read them.
+
 ## Commands
 
 ```bash
@@ -16,6 +20,7 @@ npm run lint           # ESLint on src/ and tests/
 ```
 
 To run a single test file:
+
 ```bash
 npx jest tests/unit/content.test.ts
 ```
@@ -24,12 +29,12 @@ npx jest tests/unit/content.test.ts
 
 WebQualityAnalyzer is a **Chrome and Firefox Manifest V3 browser extension** with three isolated execution contexts, each compiled to a separate Webpack bundle:
 
-| Script | Bundle | Role |
-|--------|--------|------|
-| `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events |
-| `src/content/content.ts` | `content.bundle.js` | Content script — runs analysis directly on page DOM |
-| `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — sends messages to content script, renders results |
-| `src/shared/browser.ts` | (imported by all) | Re-exports `webextension-polyfill` as `browser.*` |
+| Script                         | Bundle                 | Role                                                         |
+| ------------------------------ | ---------------------- | ------------------------------------------------------------ |
+| `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events                                   |
+| `src/content/content.ts`       | `content.bundle.js`    | Content script — runs analysis directly on page DOM          |
+| `src/popup/popup.ts`           | `popup.bundle.js`      | Popup UI — sends messages to content script, renders results |
+| `src/shared/browser.ts`        | (imported by all)      | Re-exports `webextension-polyfill` as `browser.*`            |
 
 ### Communication Flow
 
@@ -41,11 +46,11 @@ The content script exposes three analysis functions (`analyzeAccessibility`, `an
 
 ```typescript
 export interface AnalysisResult {
-  score: number;        // 0–100 overall (mean of three categories)
+  score: number; // 0–100 overall (mean of three categories)
   pageInfo: {
     url: string;
     title: string;
-    timestamp: string;  // ISO 8601
+    timestamp: string; // ISO 8601
   };
   categories: {
     accessibility: CategoryResult;
@@ -55,16 +60,16 @@ export interface AnalysisResult {
 }
 
 export interface CategoryResult {
-  score: number;        // 0–100
+  score: number; // 0–100
   issues: Issue[];
   suggestions: string[];
 }
 
 export interface Issue {
-  type: string;         // e.g. 'Missing Alt Text', 'Page Title'
+  type: string; // e.g. 'Missing Alt Text', 'Page Title'
   message: string;
   severity: 'high' | 'medium' | 'low';
-  element?: string;     // CSS selector or src of the offending element
+  element?: string; // CSS selector or src of the offending element
 }
 ```
 
@@ -92,10 +97,10 @@ The `onMessage` listener in `content.ts` returns a `Promise` (polyfill pattern) 
 
 ## CI
 
-| Workflow | File | Triggers | Steps |
-|----------|------|----------|-------|
-| CI | `.github/workflows/ci.yml` | push (all branches), PR → main | lint, build |
-| Tests | `.github/workflows/tests.yml` | push (all branches), PR → main | test with coverage |
+| Workflow | File                          | Triggers                       | Steps              |
+| -------- | ----------------------------- | ------------------------------ | ------------------ |
+| CI       | `.github/workflows/ci.yml`    | push (all branches), PR → main | lint, build        |
+| Tests    | `.github/workflows/tests.yml` | push (all branches), PR → main | test with coverage |
 
 Actions are pinned to commit SHAs for supply-chain security. Dependabot is configured to keep them up to date weekly.
 
@@ -103,11 +108,11 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 
 ### Test files
 
-| File | What it covers |
-|------|----------------|
-| `tests/unit/content.test.ts` | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `browser.runtime.onMessage` listener |
-| `tests/unit/popup.test.ts` | All exported popup UI functions: `switchTab`, `updatePageInfo`, `showLoadingState`, `showError`, `displayResults`, `displayCategoryContent`, `getScoreColor`, `exportResults`, `runAnalysis` |
-| `tests/unit/background.test.ts` | `browser.runtime.onInstalled` registration and callback |
+| File                            | What it covers                                                                                                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/unit/content.test.ts`    | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `browser.runtime.onMessage` listener                                                                   |
+| `tests/unit/popup.test.ts`      | All exported popup UI functions: `switchTab`, `updatePageInfo`, `showLoadingState`, `showError`, `displayResults`, `displayCategoryContent`, `getScoreColor`, `exportResults`, `runAnalysis` |
+| `tests/unit/background.test.ts` | `browser.runtime.onInstalled` registration and callback                                                                                                                                      |
 
 Coverage baseline (2026-03): **94.69% stmts / 90.81% branches / 86.48% funcs / 94.58% lines** — all above the 80% global threshold.
 
@@ -124,7 +129,7 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.
 - **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes instead.
 - **jsdom quirks**:
-  - `document.head.innerHTML = '...'` removes any existing `<title>` — always set `document.title` *after* assigning `head.innerHTML`.
+  - `document.head.innerHTML = '...'` removes any existing `<title>` — always set `document.title` _after_ assigning `head.innerHTML`.
   - `img.naturalWidth` / `img.naturalHeight` are always `0` — use `Object.defineProperty` with a getter to simulate large images.
   - `Blob.prototype.text()` is not implemented — spy on `JSON.stringify` to inspect data passed to the Blob constructor.
   - `URL.createObjectURL` / `URL.revokeObjectURL` are not implemented — mock both on `global.URL` before testing `exportResults`.

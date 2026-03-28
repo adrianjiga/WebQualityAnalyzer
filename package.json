@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "webqualityanalyzer",
   "version": "1.0.0",
   "description": "Web quality analysis browser extension for developers and QA professionals",
