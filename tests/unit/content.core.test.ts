@@ -1,8 +1,5 @@
-import {
-  performQualityAnalysis,
-  getCssSelector,
-  getHtmlSnippet,
-} from '../../src/content/content';
+import { performQualityAnalysis } from '../../src/content/content';
+import { getCssSelector, getHtmlSnippet } from '../../src/content/utils';
 
 // ─── Message-listener capture ─────────────────────────────────────────────────
 type MessageListener = (

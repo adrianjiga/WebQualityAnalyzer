@@ -1,4 +1,4 @@
-import { analyzePerformance } from '../../src/content/content';
+import { analyzePerformance } from '../../src/content/analyzers/performance';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 // jsdom always reports naturalWidth/naturalHeight as 0; override per element.

@@ -6,10 +6,6 @@ import { analyzePerformance } from './analyzers/performance';
 import type { AnalysisResult } from './types';
 
 export type { AnalysisResult, CategoryResult, Issue } from './types';
-export { getCssSelector, getHtmlSnippet } from './utils';
-export { analyzeAccessibility } from './analyzers/accessibility';
-export { analyzeSEO } from './analyzers/seo';
-export { analyzePerformance } from './analyzers/performance';
 
 // Listen for messages from popup
 browser.runtime.onMessage.addListener((request: unknown) => {

@@ -1,4 +1,5 @@
-import { exportResults, runAnalysis } from '../../src/popup/popup';
+import { runAnalysis } from '../../src/popup/popup';
+import { exportResults } from '../../src/popup/utils';
 import { buildResult, setupPopupDOM } from '../helpers/popup';
 
 // ══════════════════════════════════════════════════════════════════════════════

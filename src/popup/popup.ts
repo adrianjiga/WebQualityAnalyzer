@@ -4,7 +4,6 @@ import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
 
-export { getScoreColor, exportResults } from './utils';
 
 let currentAnalysis: AnalysisResult | null = null;
 

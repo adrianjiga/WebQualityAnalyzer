@@ -1,4 +1,4 @@
-import { analyzeSEO } from '../../src/content/content';
+import { analyzeSEO } from '../../src/content/analyzers/seo';
 
 beforeEach(() => {
   document.head.innerHTML = '';

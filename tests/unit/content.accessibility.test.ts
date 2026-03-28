@@ -1,4 +1,4 @@
-import { analyzeAccessibility } from '../../src/content/content';
+import { analyzeAccessibility } from '../../src/content/analyzers/accessibility';
 
 beforeEach(() => {
   document.head.innerHTML = '';

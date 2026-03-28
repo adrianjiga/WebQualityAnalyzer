@@ -1,8 +1,5 @@
-import {
-  getScoreColor,
-  displayResults,
-  displayCategoryContent,
-} from '../../src/popup/popup';
+import { displayResults, displayCategoryContent } from '../../src/popup/popup';
+import { getScoreColor } from '../../src/popup/utils';
 
 import { buildCategory, buildResult, setupPopupDOM } from '../helpers/popup';
 
