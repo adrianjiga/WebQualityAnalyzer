@@ -202,8 +202,8 @@ export function displayCategoryContent(
   if (category.issues.length === 0 && category.suggestions.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div style="font-size: 48px; margin-bottom: 15px;">${icon}</div>
-        <div style="color: #28a745; font-weight: 600;">Perfect Score!</div>
+        <div class="empty-state-icon">${icon}</div>
+        <div class="empty-state-success">Perfect Score!</div>
         <div>No issues found in this category</div>
       </div>
     `;
@@ -222,7 +222,7 @@ export function displayCategoryContent(
   if (category.issues.length > 0) {
     content += `
       <div class="metric-card">
-        <div class="metric-title" style="margin-bottom: 15px;">🚨 Issues Found</div>
+        <div class="metric-title">🚨 Issues Found</div>
         <ul class="issue-list">
           ${category.issues
             .map(
@@ -250,7 +250,7 @@ export function displayCategoryContent(
   if (category.suggestions.length > 0) {
     content += `
       <div class="metric-card">
-        <div class="metric-title" style="margin-bottom: 15px;">💡 Suggestions</div>
+        <div class="metric-title">💡 Suggestions</div>
         <ul class="issue-list">
           ${category.suggestions
             .map(

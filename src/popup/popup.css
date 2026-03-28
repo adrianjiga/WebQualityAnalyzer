@@ -132,6 +132,7 @@ button:disabled {
   font-weight: 600;
   font-size: 14px;
   color: #0a2540;
+  margin-bottom: 15px;
 }
 .metric-count {
   color: white;
@@ -282,6 +283,10 @@ details[open] > .issue-summary::before {
 .empty-state-text {
   font-size: 14px;
   color: #697b8f;
+}
+.empty-state-success {
+  color: #059669;
+  font-weight: 600;
 }
 .metric-score-label {
   font-size: 12px;
