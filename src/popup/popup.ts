@@ -1,4 +1,5 @@
 // Popup script for WebQualityAnalyzer extension
+import './popup.css';
 import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 
