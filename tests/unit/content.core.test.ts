@@ -16,8 +16,8 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  document.head.innerHTML = '';
-  document.body.innerHTML = '';
+  document.head.replaceChildren();
+  document.body.replaceChildren();
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -25,10 +25,14 @@ beforeEach(() => {
 // ══════════════════════════════════════════════════════════════════════════════
 describe('performQualityAnalysis', () => {
   it('overall score equals the rounded average of the three category scores', () => {
-    document.head.innerHTML =
-      '<meta name="description" content="' + 'A'.repeat(130) + '">';
+    const meta = document.createElement('meta');
+    meta.setAttribute('name', 'description');
+    meta.setAttribute('content', 'A'.repeat(130));
+    document.head.appendChild(meta);
     document.title = 'A Good Title Here';
-    document.body.innerHTML = '<h1>Main</h1>';
+    const h1 = document.createElement('h1');
+    h1.textContent = 'Main';
+    document.body.appendChild(h1);
 
     const result = performQualityAnalysis();
     const expected = Math.round(
@@ -113,7 +117,7 @@ describe('Chrome message listener', () => {
 // ─── getCssSelector ───────────────────────────────────────────────────────────
 describe('getCssSelector', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
   });
 
   it('uses id as anchor and stops ascending', () => {
@@ -174,7 +178,7 @@ describe('getCssSelector', () => {
 // ─── getHtmlSnippet ───────────────────────────────────────────────────────────
 describe('getHtmlSnippet', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
   });
 
   it('returns outerHTML unchanged when shorter than maxLength', () => {

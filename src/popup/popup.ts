@@ -144,7 +144,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.accessibility.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.accessibility.score
       }/100</div>
     </div>
@@ -156,7 +156,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.seo.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.seo.score
       }/100</div>
     </div>
@@ -168,7 +168,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.performance.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.performance.score
       }/100</div>
     </div>

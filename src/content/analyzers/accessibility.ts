@@ -64,10 +64,12 @@ export function analyzeAccessibility(): CategoryResult {
     const headingLevels = Array.from(headings).map(h => parseInt(h.tagName.charAt(1)));
     let previousLevel = 0;
     let hasSkippedLevel = false;
+    let firstSkippedHeading: Element | null = null;
 
-    headingLevels.forEach(level => {
-      if (level > previousLevel + 1) {
+    headingLevels.forEach((level, i) => {
+      if (level > previousLevel + 1 && !firstSkippedHeading) {
         hasSkippedLevel = true;
+        firstSkippedHeading = headings[i];
       }
       previousLevel = level;
     });
@@ -76,7 +78,9 @@ export function analyzeAccessibility(): CategoryResult {
       issues.push({
         type: 'Heading Hierarchy',
         message: 'Heading levels are not in proper order',
-        severity: 'medium'
+        severity: 'medium',
+        selector: firstSkippedHeading ? getCssSelector(firstSkippedHeading) : undefined,
+        htmlSnippet: firstSkippedHeading ? getHtmlSnippet(firstSkippedHeading) : undefined,
       });
       suggestions.push('Use heading levels in sequential order (h1, h2, h3, etc.)');
       score -= 10;
