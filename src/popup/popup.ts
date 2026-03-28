@@ -1,6 +1,9 @@
 // Popup script for WebQualityAnalyzer extension
+import './popup.css';
 import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
+import { escapeHtml, getScoreColor, exportResults } from './utils';
+
 
 let currentAnalysis: AnalysisResult | null = null;
 
@@ -111,7 +114,7 @@ export function showError(message: string): void {
   const overviewTab = document.getElementById('overview-tab') as HTMLDivElement;
   overviewTab.innerHTML = `
     <div class="empty-state">
-      <div style="color: #dc3545; margin-bottom: 10px;">❌ Error</div>
+      <div style="color: #dc2626; margin-bottom: 10px;">❌ Error</div>
       <div>${message}</div>
     </div>
   `;
@@ -141,7 +144,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.accessibility.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.accessibility.score
       }/100</div>
     </div>
@@ -153,7 +156,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.seo.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.seo.score
       }/100</div>
     </div>
@@ -165,7 +168,7 @@ function displayOverview(result: AnalysisResult): void {
           ${result.categories.performance.issues.length} issues
         </div>
       </div>
-      <div style="font-size: 12px; color: #697b8f;">Score: ${
+      <div class="metric-score-label">Score: ${
         result.categories.performance.score
       }/100</div>
     </div>
@@ -191,15 +194,6 @@ function displayPerformance(category: CategoryResult): void {
   displayCategoryContent(performanceTab, category, '⚡');
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 export function displayCategoryContent(
   container: HTMLDivElement,
   category: CategoryResult,
@@ -208,8 +202,8 @@ export function displayCategoryContent(
   if (category.issues.length === 0 && category.suggestions.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div style="font-size: 48px; margin-bottom: 15px;">${icon}</div>
-        <div style="color: #28a745; font-weight: 600;">Perfect Score!</div>
+        <div class="empty-state-icon">${icon}</div>
+        <div class="empty-state-success">Perfect Score!</div>
         <div>No issues found in this category</div>
       </div>
     `;
@@ -228,18 +222,22 @@ export function displayCategoryContent(
   if (category.issues.length > 0) {
     content += `
       <div class="metric-card">
-        <div class="metric-title" style="margin-bottom: 15px;">🚨 Issues Found</div>
+        <div class="metric-title">🚨 Issues Found</div>
         <ul class="issue-list">
           ${category.issues
             .map(
               (issue) => `
-            <li class="issue-item">
-              <strong>${escapeHtml(issue.type)}:</strong> ${escapeHtml(issue.message)}
-              ${
-                issue.element
-                  ? `<br><small style="color: #6c757d;">Element: ${escapeHtml(issue.element)}</small>`
-                  : ''
-              }
+            <li class="issue-item issue-item--${escapeHtml(issue.severity)}">
+              <details>
+                <summary class="issue-summary">
+                  <span><strong>${escapeHtml(issue.type)}:</strong> ${escapeHtml(issue.message)}</span>
+                </summary>
+                <div class="issue-detail">
+                  ${issue.selector ? `<div class="issue-detail-label">CSS Selector</div><code class="issue-selector">${escapeHtml(issue.selector)}</code>` : ''}
+                  ${issue.htmlSnippet ? `<div class="issue-detail-label">Element</div><code class="issue-snippet">${escapeHtml(issue.htmlSnippet)}</code>` : ''}
+                  <span class="severity-badge severity-badge--${escapeHtml(issue.severity)}">${escapeHtml(issue.severity)}</span>
+                </div>
+              </details>
             </li>
           `
             )
@@ -252,7 +250,7 @@ export function displayCategoryContent(
   if (category.suggestions.length > 0) {
     content += `
       <div class="metric-card">
-        <div class="metric-title" style="margin-bottom: 15px;">💡 Suggestions</div>
+        <div class="metric-title">💡 Suggestions</div>
         <ul class="issue-list">
           ${category.suggestions
             .map(
@@ -269,31 +267,3 @@ export function displayCategoryContent(
   container.innerHTML = content;
 }
 
-export function getScoreColor(score: number): string {
-  if (score >= 90) return '#059669';
-  if (score >= 80) return '#2563eb';
-  if (score >= 60) return '#b45309';
-  return '#dc2626';
-}
-
-export function exportResults(analysis: AnalysisResult): void {
-  const data = {
-    ...analysis,
-    exportedAt: new Date().toISOString(),
-  };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: 'application/json',
-  });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `quality-analysis-${
-    new Date().toISOString().split('T')[0]
-  }.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}

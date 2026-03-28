@@ -6,6 +6,7 @@ const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
   moduleNameMapper: {
     'webextension-polyfill': '<rootDir>/tests/__mocks__/webextension-polyfill.ts',
+    '\\.(css)$': '<rootDir>/tests/__mocks__/style.mock.ts',
   },
   collectCoverageFrom: [
     "src/**/*.ts",
