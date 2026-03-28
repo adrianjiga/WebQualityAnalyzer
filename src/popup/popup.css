@@ -149,11 +149,95 @@ button:disabled {
 .issue-item {
   padding: 8px 12px;
   margin: 5px 0;
-  background: #fef2f2;
+  background: #fafafa;
   border-left: 3px solid #dc2626;
   border-radius: 4px;
   font-size: 13px;
   color: #0a2540;
+}
+.issue-item--high {
+  background: #fef2f2;
+  border-left-color: #dc2626;
+}
+.issue-item--medium {
+  background: #fffbeb;
+  border-left-color: #b45309;
+}
+.issue-item--low {
+  background: #eff6ff;
+  border-left-color: #2563eb;
+}
+.issue-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.issue-summary::-webkit-details-marker {
+  display: none;
+}
+.issue-summary::before {
+  content: '\25B6';
+  font-size: 9px;
+  color: #697b8f;
+  margin-top: 3px;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+details[open] > .issue-summary::before {
+  transform: rotate(90deg);
+}
+.issue-detail {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #f6f9fc;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.issue-detail-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #697b8f;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+  margin-top: 6px;
+}
+.issue-detail-label:first-child {
+  margin-top: 0;
+}
+.issue-selector,
+.issue-snippet {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 11px;
+  color: #0a2540;
+  word-break: break-all;
+  background: #e8edf2;
+  padding: 4px 6px;
+  border-radius: 3px;
+  display: block;
+}
+.severity-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+.severity-badge--high {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.severity-badge--medium {
+  background: #fffbeb;
+  color: #b45309;
+}
+.severity-badge--low {
+  background: #eff6ff;
+  color: #2563eb;
 }
 .suggestion-item {
   padding: 8px 12px;

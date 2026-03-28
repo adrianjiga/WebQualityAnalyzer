@@ -257,17 +257,18 @@ describe('displayCategoryContent', () => {
     expect(container.textContent).toContain('No H1 found');
   });
 
-  it('renders the element field when an issue includes one', () => {
+  it('renders the selector in the expanded detail when an issue includes one', () => {
     const category = buildCategory(80, [
       {
         type: 'Missing Alt Text',
         message: 'Image lacks alt',
         severity: 'high',
         element: 'img.hero',
+        selector: 'body > img.hero',
       },
     ]);
     displayCategoryContent(container, category, '♿');
-    expect(container.textContent).toContain('img.hero');
+    expect(container.textContent).toContain('body > img.hero');
   });
 
   it('does not render an element field when the issue has none', () => {

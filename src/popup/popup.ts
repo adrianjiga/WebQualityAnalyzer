@@ -234,13 +234,17 @@ export function displayCategoryContent(
           ${category.issues
             .map(
               (issue) => `
-            <li class="issue-item">
-              <strong>${escapeHtml(issue.type)}:</strong> ${escapeHtml(issue.message)}
-              ${
-                issue.element
-                  ? `<br><small style="color: #6c757d;">Element: ${escapeHtml(issue.element)}</small>`
-                  : ''
-              }
+            <li class="issue-item issue-item--${escapeHtml(issue.severity)}">
+              <details>
+                <summary class="issue-summary">
+                  <span><strong>${escapeHtml(issue.type)}:</strong> ${escapeHtml(issue.message)}</span>
+                </summary>
+                <div class="issue-detail">
+                  ${issue.selector ? `<div class="issue-detail-label">CSS Selector</div><code class="issue-selector">${escapeHtml(issue.selector)}</code>` : ''}
+                  ${issue.htmlSnippet ? `<div class="issue-detail-label">Element</div><code class="issue-snippet">${escapeHtml(issue.htmlSnippet)}</code>` : ''}
+                  <span class="severity-badge severity-badge--${escapeHtml(issue.severity)}">${escapeHtml(issue.severity)}</span>
+                </div>
+              </details>
             </li>
           `
             )
