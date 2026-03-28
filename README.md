@@ -11,7 +11,9 @@ A Chrome and Firefox Manifest V3 browser extension that audits web pages for acc
 - **SEO** — checks page title length, meta description, H1 presence, canonical URL, and Open Graph tags
 - **Performance** — flags oversized images, missing lazy-loading, excessive external resources, and inline styles
 - **Overall score** — 0–100 weighted average across all three categories
+- **Expandable issue panels** — each issue expands to show the CSS selector and HTML snippet of the offending element
 - **Perfect Score** — each category shows a "Perfect Score!" banner when it passes all checks with no suggestions
+- **Settings tab** — placeholder for future configuration options
 - **Export** — download the full analysis as a JSON file
 
 ## Development setup
@@ -48,13 +50,13 @@ npm test             # Jest test suite (with coverage)
 ## Running tests
 
 ```bash
-npm test                              # run all tests
-npm run test:watch                    # watch mode
-npx jest tests/unit/content.test.ts  # single file
+npm test                                   # run all tests
+npm run test:watch                         # watch mode
+npx jest tests/unit/content.core.test.ts  # single file
 ```
 
 Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**.
-Current baseline: 94.69% stmts / 90.81% branches / 86.48% funcs / 94.58% lines.
+Current baseline: 95.72% stmts / 89.43% branches / 87.80% funcs / 95.62% lines.
 
 ## Architecture
 
@@ -63,13 +65,15 @@ The extension has three isolated execution contexts, each compiled to a separate
 | Source | Bundle | Role |
 |--------|--------|------|
 | `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events |
-| `src/content/content.ts` | `content.bundle.js` | Runs analysis directly on the page DOM |
+| `src/content/content.ts` | `content.bundle.js` | Orchestrates analysis, registers message listener |
 | `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — sends messages to content script, renders results |
 | `src/shared/browser.ts` | (imported by all) | Re-exports `webextension-polyfill` for unified `browser.*` API |
 
 **Communication flow:** Popup → `browser.tabs.sendMessage` → Content Script → `AnalysisResult` → Popup renders
 
-Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are exported from `content.ts` and consumed via `import type` in `popup.ts` — erased before bundling, zero runtime overhead.
+`src/content/` is split into focused modules: `types.ts` (interfaces), `utils.ts` (`getCssSelector`, `getHtmlSnippet`), and `analyzers/` (one file per category). `src/popup/` is split into `popup.ts`, `popup.css`, and `utils.ts`.
+
+Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are defined in `src/content/types.ts`, re-exported from `content.ts`, and consumed via `import type` in `popup.ts` — erased before bundling, zero runtime overhead.
 
 ### Browser manifests
 

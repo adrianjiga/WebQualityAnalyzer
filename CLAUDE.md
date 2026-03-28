@@ -22,7 +22,7 @@ npm run lint           # ESLint on src/ and tests/
 To run a single test file:
 
 ```bash
-npx jest tests/unit/content.test.ts
+npx jest tests/unit/content.core.test.ts
 ```
 
 ## Architecture
@@ -32,17 +32,34 @@ WebQualityAnalyzer is a **Chrome and Firefox Manifest V3 browser extension** wit
 | Script                         | Bundle                 | Role                                                         |
 | ------------------------------ | ---------------------- | ------------------------------------------------------------ |
 | `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events                                   |
-| `src/content/content.ts`       | `content.bundle.js`    | Content script — runs analysis directly on page DOM          |
+| `src/content/content.ts`       | `content.bundle.js`    | Content script — orchestrates analysis and registers message listener |
 | `src/popup/popup.ts`           | `popup.bundle.js`      | Popup UI — sends messages to content script, renders results |
 | `src/shared/browser.ts`        | (imported by all)      | Re-exports `webextension-polyfill` as `browser.*`            |
+
+### Content module layout
+
+`src/content/` is split into focused modules:
+
+- `content.ts` — thin orchestrator: registers `onMessage` listener, calls analyzers, re-exports types
+- `types.ts` — `AnalysisResult`, `CategoryResult`, `Issue` interface definitions
+- `utils.ts` — `getCssSelector` and `getHtmlSnippet` DOM helpers used by analyzers
+- `analyzers/accessibility.ts` — missing alt text, unlabelled inputs, heading hierarchy
+- `analyzers/seo.ts` — title length, meta description, H1, canonical, Open Graph
+- `analyzers/performance.ts` — oversized images, lazy-loading, external resources, inline styles
+
+### Popup module layout
+
+`src/popup/` is split into:
+
+- `popup.ts` — UI logic: tab switching, result rendering, expandable issue panels
+- `popup.css` — all popup styles (no inline CSS)
+- `utils.ts` — `escapeHtml`, `getScoreColor`, `exportResults`
 
 ### Communication Flow
 
 Popup → (`browser.tabs.sendMessage`) → Content Script → returns `AnalysisResult` → Popup renders
 
-The content script exposes three analysis functions (`analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`) that return `CategoryResult` objects with a numeric score (0–100) and arrays of `Issue` items.
-
-### Key Interfaces (exported from `src/content/content.ts`)
+### Key Interfaces (defined in `src/content/types.ts`, re-exported from `src/content/content.ts`)
 
 ```typescript
 export interface AnalysisResult {
@@ -69,7 +86,8 @@ export interface Issue {
   type: string; // e.g. 'Missing Alt Text', 'Page Title'
   message: string;
   severity: 'high' | 'medium' | 'low';
-  element?: string; // CSS selector or src of the offending element
+  element?: string;      // CSS selector built by getCssSelector()
+  htmlSnippet?: string;  // outer HTML snippet built by getHtmlSnippet()
 }
 ```
 
@@ -108,13 +126,18 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 
 ### Test files
 
-| File                            | What it covers                                                                                                                                                                               |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/unit/content.test.ts`    | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `browser.runtime.onMessage` listener                                                                   |
-| `tests/unit/popup.test.ts`      | All exported popup UI functions: `switchTab`, `updatePageInfo`, `showLoadingState`, `showError`, `displayResults`, `displayCategoryContent`, `getScoreColor`, `exportResults`, `runAnalysis` |
-| `tests/unit/background.test.ts` | `browser.runtime.onInstalled` registration and callback                                                                                                                                      |
+| File                                       | What it covers                                                                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `tests/unit/content.core.test.ts`          | `performQualityAnalysis`, `browser.runtime.onMessage` listener, `getCssSelector`, `getHtmlSnippet`                 |
+| `tests/unit/content.accessibility.test.ts` | `analyzeAccessibility` — all accessibility checks                                                                   |
+| `tests/unit/content.seo.test.ts`           | `analyzeSEO` — all SEO checks                                                                                       |
+| `tests/unit/content.performance.test.ts`   | `analyzePerformance` — all performance checks                                                                       |
+| `tests/unit/popup.actions.test.ts`         | `runAnalysis`, `exportResults`, `switchTab`                                                                         |
+| `tests/unit/popup.display.test.ts`         | `displayResults`, `displayCategoryContent`, `showLoadingState`, `showError`, expandable issue panels                |
+| `tests/unit/popup.ui.test.ts`              | `updatePageInfo`, `getScoreColor`, score color thresholds                                                           |
+| `tests/unit/background.test.ts`            | `browser.runtime.onInstalled` registration and callback                                                             |
 
-Coverage baseline (2026-03): **94.69% stmts / 90.81% branches / 86.48% funcs / 94.58% lines** — all above the 80% global threshold.
+Coverage baseline (2026-03): **95.72% stmts / 89.43% branches / 87.80% funcs / 95.62% lines** — all above the 80% global threshold.
 
 ### Setup
 
@@ -127,6 +150,7 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
 - **Module load-time side effects** (background.ts, content.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
 - **onMessage listener signature**: the listener returns `Promise.resolve(performQualityAnalysis())` for the `analyze` action and `undefined` otherwise — test it by awaiting the return value, not by checking a `sendResponse` callback.
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.
+- **popup.css import**: `popup.ts` imports `./popup.css`; tests mock CSS modules via `moduleNameMapper` in `jest.config.ts` pointing to `tests/__mocks__/style.mock.ts`.
 - **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes instead.
 - **jsdom quirks**:
   - `document.head.innerHTML = '...'` removes any existing `<title>` — always set `document.title` _after_ assigning `head.innerHTML`.
