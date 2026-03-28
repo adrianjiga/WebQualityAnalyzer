@@ -5,11 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run build        # Compile TypeScript and bundle via Webpack → dist/
-npm run dev          # Watch mode — rebuilds on file changes
-npm test             # Run Jest test suite
-npm run test:watch   # Jest in watch mode
-npm run lint         # ESLint on src/ and tests/
+npm run build          # Compile TypeScript and bundle for both browsers → dist/chrome/ and dist/firefox/
+npm run build:chrome   # Chrome only
+npm run build:firefox  # Firefox only
+npm run dev            # Watch mode (Chrome)
+npm run dev:firefox    # Watch mode (Firefox)
+npm test               # Run Jest test suite
+npm run test:watch     # Jest in watch mode
+npm run lint           # ESLint on src/ and tests/
 ```
 
 To run a single test file:
@@ -19,17 +22,18 @@ npx jest tests/unit/content.test.ts
 
 ## Architecture
 
-WebQualityAnalyzer is a **Chrome Manifest V3 browser extension** with three isolated execution contexts, each compiled to a separate Webpack bundle:
+WebQualityAnalyzer is a **Chrome and Firefox Manifest V3 browser extension** with three isolated execution contexts, each compiled to a separate Webpack bundle:
 
 | Script | Bundle | Role |
 |--------|--------|------|
-| `src/background/background.ts` | `background.bundle.js` | Service worker — extension lifecycle events |
+| `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events |
 | `src/content/content.ts` | `content.bundle.js` | Content script — runs analysis directly on page DOM |
 | `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — sends messages to content script, renders results |
+| `src/shared/browser.ts` | (imported by all) | Re-exports `webextension-polyfill` as `browser.*` |
 
 ### Communication Flow
 
-Popup → (Chrome message API) → Content Script → returns `AnalysisResult` → Popup renders
+Popup → (`browser.tabs.sendMessage`) → Content Script → returns `AnalysisResult` → Popup renders
 
 The content script exposes three analysis functions (`analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`) that return `CategoryResult` objects with a numeric score (0–100) and arrays of `Issue` items.
 
@@ -68,7 +72,16 @@ Other bundles consume them with zero runtime cost via `import type { AnalysisRes
 
 ### Build Output
 
-Webpack copies `src/manifest.json` and `src/popup.html` into `dist/` alongside the bundles. The `dist/` directory is what gets loaded as the unpacked extension in Chrome.
+Webpack accepts `--env browser=chrome|firefox` and outputs to `dist/<browser>/`. The correct manifest (`src/manifest.chrome.json` or `src/manifest.firefox.json`) and `src/popup.html` are copied alongside the bundles.
+
+- `dist/chrome/` — load via `chrome://extensions` → Load unpacked
+- `dist/firefox/` — load via `about:debugging` → Load Temporary Add-on → select `manifest.json`
+
+### Browser API
+
+All extension API calls use `browser.*` imported from `src/shared/browser.ts`, which re-exports `webextension-polyfill`. This provides a unified Promise-based API across Chrome and Firefox — no `chrome.*` calls appear in source files directly.
+
+The `onMessage` listener in `content.ts` returns a `Promise` (polyfill pattern) rather than using the `sendResponse` callback.
 
 ## Code Quality
 
@@ -92,19 +105,22 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 
 | File | What it covers |
 |------|----------------|
-| `tests/unit/content.test.ts` | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `chrome.runtime.onMessage` listener |
+| `tests/unit/content.test.ts` | `analyzeAccessibility`, `analyzeSEO`, `analyzePerformance`, `performQualityAnalysis`, `browser.runtime.onMessage` listener |
 | `tests/unit/popup.test.ts` | All exported popup UI functions: `switchTab`, `updatePageInfo`, `showLoadingState`, `showError`, `displayResults`, `displayCategoryContent`, `getScoreColor`, `exportResults`, `runAnalysis` |
-| `tests/unit/background.test.ts` | `chrome.runtime.onInstalled` registration and callback |
+| `tests/unit/background.test.ts` | `browser.runtime.onInstalled` registration and callback |
 
 Coverage baseline (2026-03): **94.69% stmts / 90.81% branches / 86.48% funcs / 94.58% lines** — all above the 80% global threshold.
 
 ### Setup
+
+`webextension-polyfill` is intercepted in tests via `moduleNameMapper` in `jest.config.ts`, which redirects it to `tests/__mocks__/webextension-polyfill.ts`. That stub re-exports the global `chrome` mock, so `browser.*` calls in source files resolve to the same `jest.fn()` stubs.
 
 Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (loaded via `setupFilesAfterEnv`). All `chrome.runtime` and `chrome.tabs` methods are `jest.fn()` so any module that calls them at import time won't throw in jsdom.
 
 ### Key patterns
 
 - **Module load-time side effects** (background.ts, content.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
+- **onMessage listener signature**: the listener returns `Promise.resolve(performQualityAnalysis())` for the `analyze` action and `undefined` otherwise — test it by awaiting the return value, not by checking a `sendResponse` callback.
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.
 - **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes instead.
 - **jsdom quirks**:
@@ -112,3 +128,4 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
   - `img.naturalWidth` / `img.naturalHeight` are always `0` — use `Object.defineProperty` with a getter to simulate large images.
   - `Blob.prototype.text()` is not implemented — spy on `JSON.stringify` to inspect data passed to the Blob constructor.
   - `URL.createObjectURL` / `URL.revokeObjectURL` are not implemented — mock both on `global.URL` before testing `exportResults`.
+  - `element.style.background` is normalized to `rgb()` — use `element.getAttribute('style')` to assert raw hex values set via inline styles.
