@@ -279,6 +279,71 @@ describe('displayCategoryContent', () => {
     expect(container.textContent).not.toContain('Element:');
   });
 
+  it('wraps each issue in a details element', () => {
+    const category = buildCategory(80, [
+      { type: 'Page Title', message: 'No title', severity: 'high' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    expect(container.querySelector('details')).not.toBeNull();
+  });
+
+  it('renders issue type and message in the summary', () => {
+    const category = buildCategory(80, [
+      { type: 'H1 Heading', message: 'No H1 found', severity: 'high' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    const summary = container.querySelector('summary');
+    expect(summary?.textContent).toContain('H1 Heading');
+    expect(summary?.textContent).toContain('No H1 found');
+  });
+
+  it('renders the html snippet in the expanded detail when present', () => {
+    const category = buildCategory(80, [
+      {
+        type: 'Missing Alt Text',
+        message: 'Image lacks alt',
+        severity: 'high',
+        htmlSnippet: '<img src="hero.jpg">',
+      },
+    ]);
+    displayCategoryContent(container, category, '♿');
+    expect(container.textContent).toContain('<img src="hero.jpg">');
+  });
+
+  it('renders a severity badge in the expanded detail', () => {
+    const category = buildCategory(80, [
+      { type: 'Page Title', message: 'No title', severity: 'medium' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    const badge = container.querySelector('.severity-badge--medium');
+    expect(badge).not.toBeNull();
+    expect(badge?.textContent).toContain('medium');
+  });
+
+  it('does not render a selector block when selector is absent', () => {
+    const category = buildCategory(80, [
+      { type: 'Page Title', message: 'No title', severity: 'high' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    expect(container.querySelector('.issue-selector')).toBeNull();
+  });
+
+  it('does not render a snippet block when htmlSnippet is absent', () => {
+    const category = buildCategory(80, [
+      { type: 'Page Title', message: 'No title', severity: 'high' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    expect(container.querySelector('.issue-snippet')).toBeNull();
+  });
+
+  it('applies severity variant class to issue items', () => {
+    const category = buildCategory(80, [
+      { type: 'Page Title', message: 'No title', severity: 'low' },
+    ]);
+    displayCategoryContent(container, category, '🔍');
+    expect(container.querySelector('.issue-item--low')).not.toBeNull();
+  });
+
   it('renders each suggestion', () => {
     const category = buildCategory(90, [], ['Add a CDN', 'Use gzip']);
     displayCategoryContent(container, category, '⚡');
