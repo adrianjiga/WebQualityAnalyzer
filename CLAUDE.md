@@ -136,8 +136,10 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 | `tests/unit/popup.display.test.ts`         | `displayResults`, `displayCategoryContent`, `showLoadingState`, `showError`, expandable issue panels                |
 | `tests/unit/popup.ui.test.ts`              | `updatePageInfo`, `getScoreColor`, score color thresholds                                                           |
 | `tests/unit/background.test.ts`            | `browser.runtime.onInstalled` registration and callback                                                             |
+| `tests/helpers/helpers.ts`                 | Shared DOM helpers for content tests: `appendImg`, `appendInput`, `appendHeading`, `appendMeta`, `appendLink`, `appendH1`, `addImageWithDimensions`, `appendImgs`, `appendSpansWithStyle`, `appendExternalScripts`, `appendExternalLinks`, `appendExternalAnchors` |
+| `tests/helpers/popup.ts`                   | Shared popup fixtures: `buildCategory`, `buildResult`, `setupPopupDOM`                                              |
 
-Coverage baseline (2026-03): **95.72% stmts / 89.43% branches / 87.80% funcs / 95.62% lines** — all above the 80% global threshold.
+Coverage baseline (2026-03): **95.77% stmts / 89.43% branches / 87.80% funcs / 95.66% lines** — all above the 80% global threshold.
 
 ### Setup
 
@@ -151,9 +153,10 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
 - **onMessage listener signature**: the listener returns `Promise.resolve(performQualityAnalysis())` for the `analyze` action and `undefined` otherwise — test it by awaiting the return value, not by checking a `sendResponse` callback.
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.
 - **popup.css import**: `popup.ts` imports `./popup.css`; tests mock CSS modules via `moduleNameMapper` in `jest.config.ts` pointing to `tests/__mocks__/style.mock.ts`.
-- **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes instead.
+- **DOM helpers**: all reusable DOM-construction functions live in `tests/helpers/helpers.ts`; popup fixtures (`buildCategory`, `buildResult`, `setupPopupDOM`) live in `tests/helpers/popup.ts`. Import from there rather than defining locally.
+- **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes; use `element.replaceChildren()` to clear rather than `innerHTML = ''`.
 - **jsdom quirks**:
-  - `document.head.innerHTML = '...'` removes any existing `<title>` — always set `document.title` _after_ assigning `head.innerHTML`.
+  - Any head manipulation (`appendChild`, `replaceChildren`) resets `document.title` — always set `document.title` _after_ modifying head children.
   - `img.naturalWidth` / `img.naturalHeight` are always `0` — use `Object.defineProperty` with a getter to simulate large images.
   - `Blob.prototype.text()` is not implemented — spy on `JSON.stringify` to inspect data passed to the Blob constructor.
   - `URL.createObjectURL` / `URL.revokeObjectURL` are not implemented — mock both on `global.URL` before testing `exportResults`.

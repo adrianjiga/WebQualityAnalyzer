@@ -56,7 +56,7 @@ npx jest tests/unit/content.core.test.ts  # single file
 ```
 
 Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**.
-Current baseline: 95.72% stmts / 89.43% branches / 87.80% funcs / 95.62% lines.
+Current baseline: 95.77% stmts / 89.43% branches / 87.80% funcs / 95.66% lines.
 
 ## Architecture
 
