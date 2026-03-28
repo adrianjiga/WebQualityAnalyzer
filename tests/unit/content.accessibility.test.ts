@@ -1,8 +1,36 @@
 import { analyzeAccessibility } from '../../src/content/analyzers/accessibility';
 
+// ─── DOM helpers ──────────────────────────────────────────────────────────────
+function appendImg(src: string, alt?: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.src = src;
+  if (alt !== undefined) img.alt = alt;
+  document.body.appendChild(img);
+  return img;
+}
+
+function appendInput(
+  type: string,
+  opts: { id?: string; ariaLabel?: string } = {}
+): HTMLInputElement {
+  const input = document.createElement('input');
+  input.type = type;
+  if (opts.id) input.id = opts.id;
+  if (opts.ariaLabel) input.setAttribute('aria-label', opts.ariaLabel);
+  document.body.appendChild(input);
+  return input;
+}
+
+function appendHeading(level: number, text = 'Heading'): HTMLElement {
+  const h = document.createElement(`h${level}`) as HTMLElement;
+  h.textContent = text;
+  document.body.appendChild(h);
+  return h;
+}
+
 beforeEach(() => {
-  document.head.innerHTML = '';
-  document.body.innerHTML = '';
+  document.head.replaceChildren();
+  document.body.replaceChildren();
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -18,7 +46,7 @@ describe('analyzeAccessibility', () => {
   // ── Image alt text ──────────────────────────────────────────────────────────
   describe('image alt text', () => {
     it('flags an image with no alt attribute', () => {
-      document.body.innerHTML = '<img src="test.jpg">';
+      appendImg('test.jpg');
       const result = analyzeAccessibility();
       const issue = result.issues.find((i) => i.type === 'Missing Alt Text');
       expect(issue).toBeDefined();
@@ -27,56 +55,47 @@ describe('analyzeAccessibility', () => {
     });
 
     it('flags an image with an empty alt attribute', () => {
-      document.body.innerHTML = '<img src="test.jpg" alt="">';
+      appendImg('test.jpg', '');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Missing Alt Text')
       ).toBe(true);
     });
 
     it('flags an image with a whitespace-only alt attribute', () => {
-      document.body.innerHTML = '<img src="test.jpg" alt="   ">';
+      appendImg('test.jpg', '   ');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Missing Alt Text')
       ).toBe(true);
     });
 
     it('does not flag an image with a descriptive alt attribute', () => {
-      document.body.innerHTML = '<img src="test.jpg" alt="A dog playing">';
+      appendImg('test.jpg', 'A dog playing');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Missing Alt Text')
       ).toBe(false);
     });
 
     it('deducts 3 points per image without alt text', () => {
-      document.body.innerHTML = '<img src="a.jpg"><img src="b.jpg">';
+      appendImg('a.jpg');
+      appendImg('b.jpg');
       expect(analyzeAccessibility().score).toBe(100 - 2 * 3);
     });
 
     it('caps the alt-text deduction at 25 points', () => {
       // 10 images x 3 = 30, capped at 25 -> score 75
-      document.body.innerHTML = Array(10).fill('<img src="x.jpg">').join('');
+      for (let i = 0; i < 10; i++) appendImg('x.jpg');
       expect(analyzeAccessibility().score).toBe(75);
     });
 
     it('adds a suggestion to include alt text', () => {
-      document.body.innerHTML = '<img src="test.jpg">';
+      appendImg('test.jpg');
       expect(analyzeAccessibility().suggestions).toContain(
         'Add descriptive alt text to all images for screen readers'
       );
     });
 
-    it('includes the image src in the issue element field', () => {
-      document.body.innerHTML = '<img src="http://example.com/photo.jpg">';
-      const issue = analyzeAccessibility().issues.find(
-        (i) => i.type === 'Missing Alt Text'
-      );
-      expect(issue?.element).toBe('http://example.com/photo.jpg');
-    });
-
     it('sets selector on the Missing Alt Text issue', () => {
-      const img = document.createElement('img');
-      img.src = 'test.jpg';
-      document.body.appendChild(img);
+      appendImg('test.jpg');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Missing Alt Text'
       );
@@ -86,9 +105,7 @@ describe('analyzeAccessibility', () => {
     });
 
     it('sets htmlSnippet on the Missing Alt Text issue', () => {
-      const img = document.createElement('img');
-      img.src = 'test.jpg';
-      document.body.appendChild(img);
+      appendImg('test.jpg');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Missing Alt Text'
       );
@@ -97,7 +114,7 @@ describe('analyzeAccessibility', () => {
     });
 
     it('reports the correct count when multiple images lack alt text', () => {
-      document.body.innerHTML = Array(3).fill('<img src="x.jpg">').join('');
+      for (let i = 0; i < 3; i++) appendImg('x.jpg');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Missing Alt Text'
       );
@@ -108,7 +125,7 @@ describe('analyzeAccessibility', () => {
   // ── Form labels ─────────────────────────────────────────────────────────────
   describe('form labels', () => {
     it('flags a text input with no label or aria-label', () => {
-      document.body.innerHTML = '<input type="text">';
+      appendInput('text');
       const result = analyzeAccessibility();
       const issue = result.issues.find((i) => i.type === 'Form Accessibility');
       expect(issue).toBeDefined();
@@ -116,85 +133,84 @@ describe('analyzeAccessibility', () => {
     });
 
     it('flags an email input without a label', () => {
-      document.body.innerHTML = '<input type="email">';
+      appendInput('email');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(true);
     });
 
     it('flags a password input without a label', () => {
-      document.body.innerHTML = '<input type="password">';
+      appendInput('password');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(true);
     });
 
     it('flags a textarea without a label', () => {
-      document.body.innerHTML = '<textarea></textarea>';
+      const ta = document.createElement('textarea');
+      document.body.appendChild(ta);
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(true);
     });
 
     it('flags a select without a label', () => {
-      document.body.innerHTML = '<select><option>One</option></select>';
+      const sel = document.createElement('select');
+      const opt = document.createElement('option');
+      opt.textContent = 'One';
+      sel.appendChild(opt);
+      document.body.appendChild(sel);
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(true);
     });
 
     it('does not flag an input that has a matching label[for]', () => {
-      document.body.innerHTML =
-        '<label for="name">Name</label><input type="text" id="name">';
+      const label = document.createElement('label');
+      label.setAttribute('for', 'name');
+      label.textContent = 'Name';
+      document.body.appendChild(label);
+      appendInput('text', { id: 'name' });
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(false);
     });
 
     it('does not flag an input that has an aria-label attribute', () => {
-      document.body.innerHTML = '<input type="text" aria-label="Search terms">';
+      appendInput('text', { ariaLabel: 'Search terms' });
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(false);
     });
 
     it('flags an input that has an id but no matching label element', () => {
-      document.body.innerHTML = '<input type="text" id="orphan">';
+      appendInput('text', { id: 'orphan' });
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(true);
     });
 
     it('deducts 4 points per unlabelled input', () => {
-      document.body.innerHTML = '<input type="text"><input type="text">';
+      appendInput('text');
+      appendInput('text');
       expect(analyzeAccessibility().score).toBe(100 - 2 * 4);
     });
 
     it('caps the label penalty at 20 points', () => {
       // 6 inputs x 4 = 24, capped at 20 -> score 80
-      document.body.innerHTML = Array(6).fill('<input type="text">').join('');
+      for (let i = 0; i < 6; i++) appendInput('text');
       expect(analyzeAccessibility().score).toBe(80);
     });
 
     it('adds a suggestion to add form labels', () => {
-      document.body.innerHTML = '<input type="text">';
+      appendInput('text');
       expect(analyzeAccessibility().suggestions).toContain(
         'Add labels or aria-label attributes to all form inputs'
       );
     });
 
-    it('includes the tag name in the issue element field', () => {
-      document.body.innerHTML = '<input type="text">';
-      const issue = analyzeAccessibility().issues.find(
-        (i) => i.type === 'Form Accessibility'
-      );
-      expect(issue?.element).toContain('INPUT');
-    });
-
     it('sets selector on the Form Accessibility issue', () => {
-      const input = document.createElement('input');
-      input.type = 'text';
-      document.body.appendChild(input);
+      appendInput('text');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Form Accessibility'
       );
@@ -204,9 +220,7 @@ describe('analyzeAccessibility', () => {
     });
 
     it('sets htmlSnippet on the Form Accessibility issue', () => {
-      const input = document.createElement('input');
-      input.type = 'text';
-      document.body.appendChild(input);
+      appendInput('text');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Form Accessibility'
       );
@@ -218,8 +232,9 @@ describe('analyzeAccessibility', () => {
   // ── Heading hierarchy ───────────────────────────────────────────────────────
   describe('heading hierarchy', () => {
     it('does not flag a sequential heading structure (h1 -> h2 -> h3)', () => {
-      document.body.innerHTML =
-        '<h1>Title</h1><h2>Section</h2><h3>Sub</h3>';
+      appendHeading(1, 'Title');
+      appendHeading(2, 'Section');
+      appendHeading(3, 'Sub');
       expect(
         analyzeAccessibility().issues.some(
           (i) => i.type === 'Heading Hierarchy'
@@ -228,7 +243,8 @@ describe('analyzeAccessibility', () => {
     });
 
     it('flags headings that skip a level (h1 -> h3)', () => {
-      document.body.innerHTML = '<h1>Title</h1><h3>Skipped</h3>';
+      appendHeading(1, 'Title');
+      appendHeading(3, 'Skipped');
       const issue = analyzeAccessibility().issues.find(
         (i) => i.type === 'Heading Hierarchy'
       );
@@ -238,7 +254,8 @@ describe('analyzeAccessibility', () => {
     });
 
     it('flags headings that skip multiple levels (h1 -> h4)', () => {
-      document.body.innerHTML = '<h1>Title</h1><h4>Deep</h4>';
+      appendHeading(1, 'Title');
+      appendHeading(4, 'Deep');
       expect(
         analyzeAccessibility().issues.some(
           (i) => i.type === 'Heading Hierarchy'
@@ -247,19 +264,23 @@ describe('analyzeAccessibility', () => {
     });
 
     it('deducts 10 points for heading hierarchy issues', () => {
-      document.body.innerHTML = '<h1>Title</h1><h3>Skip</h3>';
+      appendHeading(1, 'Title');
+      appendHeading(3, 'Skip');
       expect(analyzeAccessibility().score).toBe(90);
     });
 
     it('adds a suggestion for correct heading order', () => {
-      document.body.innerHTML = '<h1>Title</h1><h3>Skip</h3>';
+      appendHeading(1, 'Title');
+      appendHeading(3, 'Skip');
       expect(analyzeAccessibility().suggestions).toContain(
         'Use heading levels in sequential order (h1, h2, h3, etc.)'
       );
     });
 
     it('does not flag a page with no headings', () => {
-      document.body.innerHTML = '<p>Just a paragraph</p>';
+      const p = document.createElement('p');
+      p.textContent = 'Just a paragraph';
+      document.body.appendChild(p);
       expect(
         analyzeAccessibility().issues.some(
           (i) => i.type === 'Heading Hierarchy'
@@ -268,7 +289,7 @@ describe('analyzeAccessibility', () => {
     });
 
     it('does not flag a lone h1 heading', () => {
-      document.body.innerHTML = '<h1>Only Heading</h1>';
+      appendHeading(1, 'Only Heading');
       expect(
         analyzeAccessibility().issues.some(
           (i) => i.type === 'Heading Hierarchy'
@@ -277,8 +298,9 @@ describe('analyzeAccessibility', () => {
     });
 
     it('does not flag sibling headings at the same level (h2 -> h2)', () => {
-      document.body.innerHTML =
-        '<h1>Title</h1><h2>First</h2><h2>Second</h2>';
+      appendHeading(1, 'Title');
+      appendHeading(2, 'First');
+      appendHeading(2, 'Second');
       expect(
         analyzeAccessibility().issues.some(
           (i) => i.type === 'Heading Hierarchy'
@@ -290,35 +312,45 @@ describe('analyzeAccessibility', () => {
   // ── Colour-contrast and focus suggestions ───────────────────────────────────
   describe('colour-contrast and focus-indicator suggestions', () => {
     it('adds colour-contrast suggestion when inline colour styles exist', () => {
-      document.body.innerHTML = '<span style="color: red">Coloured</span>';
+      const span = document.createElement('span');
+      span.style.color = 'red';
+      document.body.appendChild(span);
       expect(analyzeAccessibility().suggestions).toContain(
         'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
       );
     });
 
     it('does not add colour-contrast suggestion without inline colour styles', () => {
-      document.body.innerHTML = '<p>Plain text</p>';
+      const p = document.createElement('p');
+      p.textContent = 'Plain text';
+      document.body.appendChild(p);
       expect(analyzeAccessibility().suggestions).not.toContain(
         'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
       );
     });
 
     it('adds focus-indicator suggestion when interactive elements are present', () => {
-      document.body.innerHTML = '<button>Click me</button>';
+      const btn = document.createElement('button');
+      btn.textContent = 'Click me';
+      document.body.appendChild(btn);
       expect(analyzeAccessibility().suggestions).toContain(
         'Ensure all interactive elements have visible focus indicators'
       );
     });
 
     it('adds focus-indicator suggestion for anchor elements', () => {
-      document.body.innerHTML = '<a href="#">Link</a>';
+      const a = document.createElement('a');
+      a.href = '#';
+      document.body.appendChild(a);
       expect(analyzeAccessibility().suggestions).toContain(
         'Ensure all interactive elements have visible focus indicators'
       );
     });
 
     it('does not add focus-indicator suggestion on a page with no interactive elements', () => {
-      document.body.innerHTML = '<p>No buttons here</p>';
+      const p = document.createElement('p');
+      p.textContent = 'No buttons here';
+      document.body.appendChild(p);
       expect(analyzeAccessibility().suggestions).not.toContain(
         'Ensure all interactive elements have visible focus indicators'
       );
@@ -327,16 +359,17 @@ describe('analyzeAccessibility', () => {
 
   // ── Score floor ─────────────────────────────────────────────────────────────
   it('never returns a score below 0', () => {
-    document.body.innerHTML =
-      Array(20).fill('<img src="x.jpg">').join('') +
-      Array(10).fill('<input type="text">').join('') +
-      '<h1>A</h1><h4>B</h4>';
+    for (let i = 0; i < 20; i++) appendImg('x.jpg');
+    for (let i = 0; i < 10; i++) appendInput('text');
+    appendHeading(1, 'A');
+    appendHeading(4, 'B');
     expect(analyzeAccessibility().score).toBeGreaterThanOrEqual(0);
   });
 
   it('accumulates penalties from multiple issue types', () => {
     // 1 image without alt (-3) + 1 input without label (-4) = score 93
-    document.body.innerHTML = '<img src="x.jpg"><input type="text">';
+    appendImg('x.jpg');
+    appendInput('text');
     expect(analyzeAccessibility().score).toBe(93);
   });
 });

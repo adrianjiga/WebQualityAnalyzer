@@ -97,7 +97,6 @@ describe('displayCategoryContent', () => {
         type: 'Missing Alt Text',
         message: 'Image lacks alt',
         severity: 'high',
-        element: 'img.hero',
         selector: 'body > img.hero',
       },
     ]);

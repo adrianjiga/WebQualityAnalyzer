@@ -1,6 +1,6 @@
 import { analyzePerformance } from '../../src/content/analyzers/performance';
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── DOM helpers ──────────────────────────────────────────────────────────────
 // jsdom always reports naturalWidth/naturalHeight as 0; override per element.
 // loading="lazy" prevents the unrelated lazy-loading check from firing when
 // many of these images are added in the same test.
@@ -24,9 +24,51 @@ function addImageWithDimensions(
   return img;
 }
 
+function appendImgs(count: number, src = 'x.jpg'): void {
+  for (let i = 0; i < count; i++) {
+    const img = document.createElement('img');
+    img.src = src;
+    document.body.appendChild(img);
+  }
+}
+
+function appendSpansWithStyle(count: number): void {
+  for (let i = 0; i < count; i++) {
+    const span = document.createElement('span');
+    span.style.color = 'red';
+    document.body.appendChild(span);
+  }
+}
+
+function appendExternalScripts(count: number): void {
+  for (let i = 0; i < count; i++) {
+    const script = document.createElement('script');
+    script.src = 'http://cdn.example.com/lib.js';
+    document.head.appendChild(script);
+  }
+}
+
+function appendExternalLinks(count: number): void {
+  for (let i = 0; i < count; i++) {
+    const link = document.createElement('link');
+    link.setAttribute('href', 'http://cdn.example.com/style.css');
+    document.head.appendChild(link);
+  }
+}
+
+function appendExternalAnchors(count: number, withRel = false): void {
+  for (let i = 0; i < count; i++) {
+    const a = document.createElement('a');
+    a.href = 'http://example.com';
+    a.textContent = 'link';
+    if (withRel) a.setAttribute('rel', 'noopener noreferrer');
+    document.body.appendChild(a);
+  }
+}
+
 beforeEach(() => {
-  document.head.innerHTML = '';
-  document.body.innerHTML = '';
+  document.head.replaceChildren();
+  document.body.replaceChildren();
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -50,11 +92,7 @@ describe('analyzePerformance', () => {
 
   it('includes three generic performance suggestions when the page has issues', () => {
     // 4 images without a loading attribute trigger the Lazy Loading issue (score < 100)
-    for (let i = 0; i < 4; i++) {
-      const img = document.createElement('img');
-      img.src = 'x.jpg';
-      document.body.appendChild(img);
-    }
+    appendImgs(4);
     const result = analyzePerformance();
     expect(result.suggestions).toContain(
       'Consider using a Content Delivery Network (CDN) for static assets'
@@ -101,14 +139,6 @@ describe('analyzePerformance', () => {
       expect(analyzePerformance().score).toBe(80);
     });
 
-    it('includes the image src in the issue element field', () => {
-      addImageWithDimensions(2000, 1200, 'http://example.com/big.jpg');
-      const issue = analyzePerformance().issues.find(
-        (i) => i.type === 'Image Optimization'
-      );
-      expect(issue?.element).toBe('http://example.com/big.jpg');
-    });
-
     it('sets selector on the Image Optimization issue', () => {
       addImageWithDimensions(2000, 1200);
       const issue = analyzePerformance().issues.find(
@@ -148,14 +178,14 @@ describe('analyzePerformance', () => {
   // ── Lazy loading ────────────────────────────────────────────────────────────
   describe('lazy loading', () => {
     it('does not flag 3 or fewer images without a loading attribute', () => {
-      document.body.innerHTML = Array(3).fill('<img src="x.jpg">').join('');
+      appendImgs(3);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'Lazy Loading')
       ).toBe(false);
     });
 
     it('flags when more than 3 images lack the loading attribute', () => {
-      document.body.innerHTML = Array(4).fill('<img src="x.jpg">').join('');
+      appendImgs(4);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'Lazy Loading'
       );
@@ -164,21 +194,24 @@ describe('analyzePerformance', () => {
     });
 
     it('deducts 10 points when more than 3 images lack lazy loading', () => {
-      document.body.innerHTML = Array(5).fill('<img src="x.jpg">').join('');
+      appendImgs(5);
       expect(analyzePerformance().score).toBe(90);
     });
 
     it('does not flag images that already have a loading attribute', () => {
-      document.body.innerHTML = Array(5)
-        .fill('<img src="x.jpg" loading="lazy">')
-        .join('');
+      for (let i = 0; i < 5; i++) {
+        const img = document.createElement('img');
+        img.src = 'x.jpg';
+        img.setAttribute('loading', 'lazy');
+        document.body.appendChild(img);
+      }
       expect(
         analyzePerformance().issues.some((i) => i.type === 'Lazy Loading')
       ).toBe(false);
     });
 
     it('adds a suggestion to use lazy loading', () => {
-      document.body.innerHTML = Array(4).fill('<img src="x.jpg">').join('');
+      appendImgs(4);
       expect(analyzePerformance().suggestions).toContain(
         'Add loading="lazy" to images below the fold'
       );
@@ -188,18 +221,14 @@ describe('analyzePerformance', () => {
   // ── External resources ──────────────────────────────────────────────────────
   describe('external resources', () => {
     it('does not flag 10 or fewer external scripts', () => {
-      document.head.innerHTML = Array(10)
-        .fill('<script src="http://cdn.example.com/lib.js"></script>')
-        .join('');
+      appendExternalScripts(10);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'External Resources')
       ).toBe(false);
     });
 
     it('flags more than 10 external resources', () => {
-      document.head.innerHTML = Array(11)
-        .fill('<script src="http://cdn.example.com/lib.js"></script>')
-        .join('');
+      appendExternalScripts(11);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'External Resources'
       );
@@ -209,33 +238,25 @@ describe('analyzePerformance', () => {
 
     it('deducts 2 points per resource above 10', () => {
       // 12 scripts -> 2 above limit -> 2 x 2 = 4 deducted -> score 96
-      document.head.innerHTML = Array(12)
-        .fill('<script src="http://cdn.example.com/lib.js"></script>')
-        .join('');
+      appendExternalScripts(12);
       expect(analyzePerformance().score).toBe(96);
     });
 
     it('caps the external-resources deduction at 15 points', () => {
       // 20 scripts -> 10 above limit -> 10 x 2 = 20, capped at 15 -> score 85
-      document.head.innerHTML = Array(20)
-        .fill('<script src="http://cdn.example.com/lib.js"></script>')
-        .join('');
+      appendExternalScripts(20);
       expect(analyzePerformance().score).toBe(85);
     });
 
     it('counts external link elements as external resources', () => {
-      document.head.innerHTML = Array(11)
-        .fill('<link href="http://cdn.example.com/style.css">')
-        .join('');
+      appendExternalLinks(11);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'External Resources')
       ).toBe(true);
     });
 
     it('includes the total count in the issue message', () => {
-      document.head.innerHTML = Array(11)
-        .fill('<script src="http://cdn.example.com/lib.js"></script>')
-        .join('');
+      appendExternalScripts(11);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'External Resources'
       );
@@ -246,18 +267,14 @@ describe('analyzePerformance', () => {
   // ── Inline styles ───────────────────────────────────────────────────────────
   describe('inline styles', () => {
     it('does not flag 20 or fewer elements with inline styles', () => {
-      document.body.innerHTML = Array(20)
-        .fill('<span style="color:red"></span>')
-        .join('');
+      appendSpansWithStyle(20);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'Inline Styles')
       ).toBe(false);
     });
 
     it('flags more than 20 elements with inline styles', () => {
-      document.body.innerHTML = Array(21)
-        .fill('<span style="color:red"></span>')
-        .join('');
+      appendSpansWithStyle(21);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'Inline Styles'
       );
@@ -266,16 +283,12 @@ describe('analyzePerformance', () => {
     });
 
     it('deducts 5 points for excessive inline styles', () => {
-      document.body.innerHTML = Array(21)
-        .fill('<span style="color:red"></span>')
-        .join('');
+      appendSpansWithStyle(21);
       expect(analyzePerformance().score).toBe(95);
     });
 
     it('adds a suggestion to move inline styles to CSS', () => {
-      document.body.innerHTML = Array(21)
-        .fill('<span style="color:red"></span>')
-        .join('');
+      appendSpansWithStyle(21);
       expect(analyzePerformance().suggestions).toContain(
         'Move inline styles to CSS files for better caching'
       );
@@ -285,15 +298,14 @@ describe('analyzePerformance', () => {
   // ── External links ──────────────────────────────────────────────────────────
   describe('external links', () => {
     it('does not flag external links that have a rel attribute', () => {
-      document.body.innerHTML =
-        '<a href="http://example.com" rel="noopener noreferrer">link</a>';
+      appendExternalAnchors(1, true);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'External Links')
       ).toBe(false);
     });
 
     it('flags external links without a rel attribute', () => {
-      document.body.innerHTML = '<a href="http://example.com">link</a>';
+      appendExternalAnchors(1);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'External Links'
       );
@@ -302,39 +314,34 @@ describe('analyzePerformance', () => {
     });
 
     it('deducts 1 point per external link without rel', () => {
-      document.body.innerHTML =
-        '<a href="http://example.com">one</a>' +
-        '<a href="http://other.com">two</a>';
+      appendExternalAnchors(2);
       expect(analyzePerformance().score).toBe(98);
     });
 
     it('caps the external-links deduction at 10 points', () => {
-      document.body.innerHTML = Array(11)
-        .fill('<a href="http://example.com">link</a>')
-        .join('');
+      appendExternalAnchors(11);
       expect(analyzePerformance().score).toBe(90);
     });
 
     it('does not count links to localhost as external (jsdom default hostname)', () => {
-      document.body.innerHTML =
-        '<a href="http://localhost/about">Internal</a>';
+      const a = document.createElement('a');
+      a.href = 'http://localhost/about';
+      a.textContent = 'Internal';
+      document.body.appendChild(a);
       expect(
         analyzePerformance().issues.some((i) => i.type === 'External Links')
       ).toBe(false);
     });
 
     it('adds a suggestion for security rel attributes', () => {
-      document.body.innerHTML = '<a href="http://example.com">unsafe</a>';
+      appendExternalAnchors(1);
       expect(analyzePerformance().suggestions).toContain(
         'Add rel="noopener noreferrer" to external links for security and performance'
       );
     });
 
     it('reports the correct count in the issue message', () => {
-      document.body.innerHTML =
-        '<a href="http://a.com">one</a>' +
-        '<a href="http://b.com">two</a>' +
-        '<a href="http://c.com">three</a>';
+      appendExternalAnchors(3);
       const issue = analyzePerformance().issues.find(
         (i) => i.type === 'External Links'
       );
@@ -343,13 +350,10 @@ describe('analyzePerformance', () => {
   });
 
   it('never returns a score below 0 with many simultaneous issues', () => {
-    document.head.innerHTML = Array(20)
-      .fill('<script src="http://cdn.example.com/lib.js"></script>')
-      .join('');
-    document.body.innerHTML =
-      Array(5).fill('<img src="x.jpg">').join('') +
-      Array(21).fill('<span style="color:red"></span>').join('') +
-      Array(11).fill('<a href="http://example.com">link</a>').join('');
+    appendExternalScripts(20);
+    appendImgs(5);
+    appendSpansWithStyle(21);
+    appendExternalAnchors(11);
     for (let i = 0; i < 8; i++) addImageWithDimensions(2000, 1200);
     expect(analyzePerformance().score).toBeGreaterThanOrEqual(0);
   });

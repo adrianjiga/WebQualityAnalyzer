@@ -86,7 +86,7 @@ export interface Issue {
   type: string; // e.g. 'Missing Alt Text', 'Page Title'
   message: string;
   severity: 'high' | 'medium' | 'low';
-  element?: string;      // CSS selector built by getCssSelector()
+  selector?: string;     // CSS path built by getCssSelector()
   htmlSnippet?: string;  // outer HTML snippet built by getHtmlSnippet()
 }
 ```

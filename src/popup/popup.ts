@@ -114,7 +114,7 @@ export function showError(message: string): void {
   const overviewTab = document.getElementById('overview-tab') as HTMLDivElement;
   overviewTab.innerHTML = `
     <div class="empty-state">
-      <div style="color: #dc3545; margin-bottom: 10px;">❌ Error</div>
+      <div style="color: #dc2626; margin-bottom: 10px;">❌ Error</div>
       <div>${message}</div>
     </div>
   `;

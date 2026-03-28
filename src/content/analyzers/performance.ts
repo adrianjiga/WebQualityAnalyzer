@@ -17,7 +17,6 @@ export function analyzePerformance(): CategoryResult {
       type: 'Image Optimization',
       message: `${largeImages.length} images larger than 1920x1080`,
       severity: 'medium',
-      element: firstLarge?.src || 'Unknown image',
       selector: firstLarge ? getCssSelector(firstLarge) : undefined,
       htmlSnippet: firstLarge ? getHtmlSnippet(firstLarge) : undefined,
     });

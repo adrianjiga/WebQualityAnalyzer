@@ -22,7 +22,6 @@ export interface Issue {
   type: string;
   message: string;
   severity: 'high' | 'medium' | 'low';
-  element?: string;
   selector?: string;
   htmlSnippet?: string;
 }

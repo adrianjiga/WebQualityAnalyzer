@@ -28,18 +28,51 @@ export function buildResult(overrides: Partial<AnalysisResult> = {}): AnalysisRe
 }
 
 export function setupPopupDOM(): void {
-  document.body.innerHTML =
-    '<button id="analyze-btn">Analyze Page</button>' +
-    '<button id="export-btn" disabled>Export</button>' +
-    '<div id="page-info" style="display:none"><div id="page-url"></div></div>' +
-    '<div class="tab active" data-tab="overview">Overview</div>' +
-    '<div class="tab" data-tab="accessibility">A11y</div>' +
-    '<div class="tab" data-tab="seo">SEO</div>' +
-    '<div class="tab" data-tab="performance">Perf</div>' +
-    '<div class="tab" data-tab="settings">Settings</div>' +
-    '<div id="overview-tab" class="tab-content active"></div>' +
-    '<div id="accessibility-tab" class="tab-content"></div>' +
-    '<div id="seo-tab" class="tab-content"></div>' +
-    '<div id="performance-tab" class="tab-content"></div>' +
-    '<div id="settings-tab" class="tab-content"></div>';
+  document.body.replaceChildren();
+
+  const analyzeBtn = document.createElement('button');
+  analyzeBtn.id = 'analyze-btn';
+  analyzeBtn.textContent = 'Analyze Page';
+
+  const exportBtn = document.createElement('button');
+  exportBtn.id = 'export-btn';
+  exportBtn.disabled = true;
+  exportBtn.textContent = 'Export';
+
+  const pageUrl = document.createElement('div');
+  pageUrl.id = 'page-url';
+
+  const pageInfo = document.createElement('div');
+  pageInfo.id = 'page-info';
+  pageInfo.style.display = 'none';
+  pageInfo.appendChild(pageUrl);
+
+  const tabs = [
+    { name: 'Overview', tab: 'overview', active: true },
+    { name: 'A11y', tab: 'accessibility', active: false },
+    { name: 'SEO', tab: 'seo', active: false },
+    { name: 'Perf', tab: 'performance', active: false },
+    { name: 'Settings', tab: 'settings', active: false },
+  ];
+
+  const tabButtons = tabs.map(({ name, tab, active }) => {
+    const btn = document.createElement('div');
+    btn.className = active ? 'tab active' : 'tab';
+    btn.dataset.tab = tab;
+    btn.textContent = name;
+    return btn;
+  });
+
+  const tabPanels = tabs.map(({ tab, active }) => {
+    const panel = document.createElement('div');
+    panel.id = `${tab}-tab`;
+    panel.className = active ? 'tab-content active' : 'tab-content';
+    return panel;
+  });
+
+  document.body.appendChild(analyzeBtn);
+  document.body.appendChild(exportBtn);
+  document.body.appendChild(pageInfo);
+  tabButtons.forEach(btn => document.body.appendChild(btn));
+  tabPanels.forEach(panel => document.body.appendChild(panel));
 }

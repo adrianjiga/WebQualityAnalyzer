@@ -17,7 +17,6 @@ export function analyzeAccessibility(): CategoryResult {
       type: 'Missing Alt Text',
       message: `${imagesWithoutAlt.length} images missing alt text`,
       severity: 'high',
-      element: firstImg?.src || 'Unknown image',
       selector: firstImg ? getCssSelector(firstImg) : undefined,
       htmlSnippet: firstImg ? getHtmlSnippet(firstImg) : undefined,
     });
@@ -41,7 +40,6 @@ export function analyzeAccessibility(): CategoryResult {
       type: 'Form Accessibility',
       message: `${inputsWithoutLabels.length} form inputs without labels`,
       severity: 'high',
-      element: `${inputsWithoutLabels[0]?.tagName} element`,
       selector: firstInput ? getCssSelector(firstInput) : undefined,
       htmlSnippet: firstInput ? getHtmlSnippet(firstInput) : undefined,
     });

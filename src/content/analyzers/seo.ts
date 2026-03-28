@@ -1,4 +1,5 @@
 import type { CategoryResult, Issue } from '../types';
+import { getCssSelector, getHtmlSnippet } from '../utils';
 
 export function analyzeSEO(): CategoryResult {
   const issues: Issue[] = [];
@@ -65,7 +66,8 @@ export function analyzeSEO(): CategoryResult {
   }
 
   // Check for H1 heading
-  const h1Count = document.querySelectorAll('h1').length;
+  const h1Elements = document.querySelectorAll('h1');
+  const h1Count = h1Elements.length;
   if (h1Count === 0) {
     issues.push({
       type: 'H1 Heading',
@@ -75,10 +77,13 @@ export function analyzeSEO(): CategoryResult {
     suggestions.push('Add a main H1 heading to improve SEO and accessibility');
     score -= 20;
   } else if (h1Count > 1) {
+    const firstH1 = h1Elements[0];
     issues.push({
       type: 'H1 Heading',
       message: `Multiple H1 headings found (${h1Count})`,
-      severity: 'medium'
+      severity: 'medium',
+      selector: firstH1 ? getCssSelector(firstH1) : undefined,
+      htmlSnippet: firstH1 ? getHtmlSnippet(firstH1) : undefined,
     });
     suggestions.push('Use only one H1 heading per page');
     score -= 15;

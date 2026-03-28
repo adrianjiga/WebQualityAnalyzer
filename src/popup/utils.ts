@@ -1,4 +1,4 @@
-import type { AnalysisResult } from '../content/types';
+import type { AnalysisResult } from '../content/content';
 
 export function escapeHtml(s: string): string {
   return s
