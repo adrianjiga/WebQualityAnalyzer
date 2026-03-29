@@ -51,9 +51,116 @@
   </div>
 
   <div id="settings-tab" class="tab-content">
-    <div class="empty-state">
-      <div class="empty-state-icon">⚙️</div>
-      <div class="empty-state-text">Settings coming soon</div>
+    <div class="settings-container">
+
+      <details class="settings-section" open>
+        <summary class="settings-section-header">
+          <span class="settings-section-title">Accessibility</span>
+          <label class="settings-toggle" title="Enable accessibility analyzer">
+            <input type="checkbox" id="settings-a11y-enabled">
+            <span class="settings-toggle-slider"></span>
+          </label>
+        </summary>
+        <div class="settings-section-body" id="settings-a11y-body">
+          <div class="settings-field">
+            <label for="settings-a11y-missingAltDeduction">Points per missing alt</label>
+            <input type="number" id="settings-a11y-missingAltDeduction" min="0" max="25">
+          </div>
+          <div class="settings-field">
+            <label for="settings-a11y-missingAltCap">Missing alt deduction cap</label>
+            <input type="number" id="settings-a11y-missingAltCap" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-a11y-unlabelledInputDeduction">Points per unlabelled input</label>
+            <input type="number" id="settings-a11y-unlabelledInputDeduction" min="0" max="25">
+          </div>
+          <div class="settings-field">
+            <label for="settings-a11y-unlabelledInputCap">Unlabelled input deduction cap</label>
+            <input type="number" id="settings-a11y-unlabelledInputCap" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-a11y-headingHierarchyDeduction">Heading hierarchy deduction</label>
+            <input type="number" id="settings-a11y-headingHierarchyDeduction" min="0" max="50">
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary class="settings-section-header">
+          <span class="settings-section-title">SEO</span>
+          <label class="settings-toggle" title="Enable SEO analyzer">
+            <input type="checkbox" id="settings-seo-enabled">
+            <span class="settings-toggle-slider"></span>
+          </label>
+        </summary>
+        <div class="settings-section-body" id="settings-seo-body">
+          <div class="settings-field">
+            <label for="settings-seo-titleMinLength">Title min length (chars)</label>
+            <input type="number" id="settings-seo-titleMinLength" min="1" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-titleMaxLength">Title max length (chars)</label>
+            <input type="number" id="settings-seo-titleMaxLength" min="1" max="200">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-metaDescMinLength">Meta desc min length (chars)</label>
+            <input type="number" id="settings-seo-metaDescMinLength" min="1" max="300">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-metaDescMaxLength">Meta desc max length (chars)</label>
+            <input type="number" id="settings-seo-metaDescMaxLength" min="1" max="500">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-noH1Deduction">No H1 deduction</label>
+            <input type="number" id="settings-seo-noH1Deduction" min="0" max="50">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-multipleH1Deduction">Multiple H1 deduction</label>
+            <input type="number" id="settings-seo-multipleH1Deduction" min="0" max="50">
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary class="settings-section-header">
+          <span class="settings-section-title">Performance</span>
+          <label class="settings-toggle" title="Enable performance analyzer">
+            <input type="checkbox" id="settings-perf-enabled">
+            <span class="settings-toggle-slider"></span>
+          </label>
+        </summary>
+        <div class="settings-section-body" id="settings-perf-body">
+          <div class="settings-field">
+            <label for="settings-perf-imageMaxWidth">Image max width (px)</label>
+            <input type="number" id="settings-perf-imageMaxWidth" min="1" max="9999">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-imageMaxHeight">Image max height (px)</label>
+            <input type="number" id="settings-perf-imageMaxHeight" min="1" max="9999">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-lazyLoadThreshold">Lazy load threshold (images)</label>
+            <input type="number" id="settings-perf-lazyLoadThreshold" min="0" max="50">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-externalResourcesThreshold">External resources threshold</label>
+            <input type="number" id="settings-perf-externalResourcesThreshold" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-inlineStylesThreshold">Inline styles threshold</label>
+            <input type="number" id="settings-perf-inlineStylesThreshold" min="0" max="200">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-externalLinksDeductionCap">Ext. links deduction cap</label>
+            <input type="number" id="settings-perf-externalLinksDeductionCap" min="0" max="50">
+          </div>
+        </div>
+      </details>
+
+      <button id="settings-reset-btn" class="btn-secondary settings-reset-btn">
+        Reset to Defaults
+      </button>
+
     </div>
   </div>
 
