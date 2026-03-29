@@ -241,3 +241,79 @@ describe('analyzeSEO', () => {
     expect(analyzeSEO().score).toBeGreaterThanOrEqual(0);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// analyzeSEO — custom settings
+// ══════════════════════════════════════════════════════════════════════════════
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
+
+describe('analyzeSEO with custom settings', () => {
+  beforeEach(() => {
+    document.head.replaceChildren();
+    document.body.replaceChildren();
+    // Always set title after head manipulation (jsdom quirk)
+    document.title = 'Default Title For SEO Tests That Is Long Enough';
+    appendMeta({ name: 'description', content: 'A'.repeat(130) });
+    appendH1();
+  });
+
+  it('uses custom titleMinLength', () => {
+    document.title = 'Short';
+    const result = analyzeSEO({
+      ...DEFAULT_SETTINGS.seo,
+      titleMinLength: 20,
+    });
+    const issue = result.issues.find((i) => i.type === 'Page Title');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toBe('Page title is too short');
+  });
+
+  it('uses custom titleMaxLength', () => {
+    document.title = 'A'.repeat(50);
+    const result = analyzeSEO({
+      ...DEFAULT_SETTINGS.seo,
+      titleMaxLength: 30,
+    });
+    const issue = result.issues.find((i) => i.type === 'Page Title');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toBe('Page title is too long');
+  });
+
+  it('uses custom metaDescMinLength', () => {
+    document.head.replaceChildren();
+    appendMeta({ name: 'description', content: 'Short desc' });
+    document.title = 'Default Title For SEO Tests That Is Long Enough';
+    appendH1();
+    const result = analyzeSEO({
+      ...DEFAULT_SETTINGS.seo,
+      metaDescMinLength: 5,
+    });
+    const issue = result.issues.find((i) => i.type === 'Meta Description');
+    expect(issue).toBeUndefined();
+  });
+
+  it('uses custom noH1Deduction', () => {
+    document.head.replaceChildren();
+    document.body.replaceChildren();
+    appendMeta({ name: 'description', content: 'A'.repeat(130) });
+    document.title = 'Default Title For SEO Tests That Is Long Enough';
+    const result = analyzeSEO({
+      ...DEFAULT_SETTINGS.seo,
+      noH1Deduction: 5,
+    });
+    expect(result.score).toBe(95);
+  });
+
+  it('uses custom multipleH1Deduction', () => {
+    document.head.replaceChildren();
+    appendMeta({ name: 'description', content: 'A'.repeat(130) });
+    document.title = 'Default Title For SEO Tests That Is Long Enough';
+    appendH1();
+    appendH1();
+    const result = analyzeSEO({
+      ...DEFAULT_SETTINGS.seo,
+      multipleH1Deduction: 5,
+    });
+    expect(result.score).toBe(95);
+  });
+});
