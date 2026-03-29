@@ -75,4 +75,50 @@ export function setupPopupDOM(): void {
   document.body.appendChild(pageInfo);
   tabButtons.forEach(btn => document.body.appendChild(btn));
   tabPanels.forEach(panel => document.body.appendChild(panel));
+
+  // Populate settings tab panel with the settings UI elements
+  const settingsPanel = document.getElementById('settings-tab')!;
+  const settingsIds: Array<[string, string, boolean]> = [
+    // [id, type, isCheckbox]
+    ['settings-a11y-enabled', 'checkbox', true],
+    ['settings-a11y-missingAltDeduction', 'number', false],
+    ['settings-a11y-missingAltCap', 'number', false],
+    ['settings-a11y-unlabelledInputDeduction', 'number', false],
+    ['settings-a11y-unlabelledInputCap', 'number', false],
+    ['settings-a11y-headingHierarchyDeduction', 'number', false],
+    ['settings-seo-enabled', 'checkbox', true],
+    ['settings-seo-titleMinLength', 'number', false],
+    ['settings-seo-titleMaxLength', 'number', false],
+    ['settings-seo-metaDescMinLength', 'number', false],
+    ['settings-seo-metaDescMaxLength', 'number', false],
+    ['settings-seo-noH1Deduction', 'number', false],
+    ['settings-seo-multipleH1Deduction', 'number', false],
+    ['settings-perf-enabled', 'checkbox', true],
+    ['settings-perf-imageMaxWidth', 'number', false],
+    ['settings-perf-imageMaxHeight', 'number', false],
+    ['settings-perf-lazyLoadThreshold', 'number', false],
+    ['settings-perf-externalResourcesThreshold', 'number', false],
+    ['settings-perf-inlineStylesThreshold', 'number', false],
+    ['settings-perf-externalLinksDeductionCap', 'number', false],
+  ];
+
+  settingsIds.forEach(([id, type]) => {
+    const input = document.createElement('input');
+    input.type = type;
+    input.id = id;
+    settingsPanel.appendChild(input);
+  });
+
+  // Section bodies for disabled-state toggling
+  ['settings-a11y-body', 'settings-seo-body', 'settings-perf-body'].forEach((id) => {
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'settings-section-body';
+    settingsPanel.appendChild(div);
+  });
+
+  // Reset button
+  const resetBtn = document.createElement('button');
+  resetBtn.id = 'settings-reset-btn';
+  settingsPanel.appendChild(resetBtn);
 }
