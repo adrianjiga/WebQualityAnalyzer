@@ -370,7 +370,7 @@ details[open] > .settings-section-header::before {
   border: 1px solid #dde3ea;
   border-radius: 4px;
   font-size: 12px;
-  text-align: right;
+  text-align: left;
   color: #0a2540;
   background: #fff;
 }
