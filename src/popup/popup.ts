@@ -312,14 +312,14 @@ export function attachSettingsListeners(): void {
     toggle.addEventListener('click', (e) => e.stopPropagation());
     toggle.addEventListener('change', () => {
       updateSectionDisabledState(bodyId, toggle.checked);
-      saveSettings(collectSettings());
+      saveSettings(collectSettings()).catch(console.error);
     });
   });
 
   // Auto-save all number inputs on change
   document.querySelectorAll('#settings-tab input[type="number"]').forEach((input) => {
     input.addEventListener('change', () => {
-      saveSettings(collectSettings());
+      saveSettings(collectSettings()).catch(console.error);
     });
   });
 
