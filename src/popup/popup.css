@@ -332,6 +332,17 @@ details[open] > .issue-summary::before {
 .settings-section-header::-webkit-details-marker {
   display: none;
 }
+.settings-section-header::before {
+  content: '\25B6';
+  font-size: 9px;
+  color: #697b8f;
+  transition: transform 0.15s;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+details[open] > .settings-section-header::before {
+  transform: rotate(90deg);
+}
 .settings-section-body {
   padding: 12px 14px;
   display: flex;
