@@ -4,7 +4,7 @@ import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
 import { loadSettings, saveSettings, resetSettings } from './settings';
-import { AnalyzerSettings } from '../shared/settings';
+import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
 
 
 let currentAnalysis: AnalysisResult | null = null;
@@ -204,10 +204,15 @@ function displayPerformance(category: CategoryResult): void {
 // ── Settings UI ──────────────────────────────────────────────────────────────
 
 export function initSettings(): void {
-  loadSettings().then((settings) => {
-    populateSettingsUI(settings);
-    attachSettingsListeners();
-  });
+  loadSettings()
+    .then((settings) => {
+      populateSettingsUI(settings);
+      attachSettingsListeners();
+    })
+    .catch(() => {
+      populateSettingsUI(DEFAULT_SETTINGS);
+      attachSettingsListeners();
+    });
 }
 
 export function populateSettingsUI(settings: AnalyzerSettings): void {

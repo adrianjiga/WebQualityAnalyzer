@@ -2,6 +2,7 @@ import {
   populateSettingsUI,
   collectSettings,
   attachSettingsListeners,
+  initSettings,
 } from '../../src/popup/popup';
 import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 import { setupPopupDOM } from '../helpers/popup';
@@ -14,6 +15,24 @@ beforeEach(() => {
   storageGet.mockResolvedValue({});
   storageSet.mockResolvedValue(undefined);
   setupPopupDOM();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// initSettings
+// ══════════════════════════════════════════════════════════════════════════════
+describe('initSettings', () => {
+  it('falls back to DEFAULT_SETTINGS and still attaches listeners when storage rejects', async () => {
+    storageGet.mockRejectedValue(new Error('storage unavailable'));
+    initSettings();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const el = document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement;
+    expect(el.value).toBe(String(DEFAULT_SETTINGS.accessibility.missingAltDeduction));
+    // Listener is attached — a number input change should trigger saveSettings
+    storageSet.mockResolvedValue(undefined);
+    el.value = '9';
+    el.dispatchEvent(new Event('change'));
+    expect(storageSet).toHaveBeenCalled();
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
