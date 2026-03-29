@@ -13,7 +13,7 @@ A Chrome and Firefox Manifest V3 browser extension that audits web pages for acc
 - **Overall score** — 0–100 weighted average across all three categories
 - **Expandable issue panels** — each issue expands to show the CSS selector and HTML snippet of the offending element
 - **Perfect Score** — each category shows a "Perfect Score!" banner when it passes all checks with no suggestions
-- **Settings tab** — placeholder for future configuration options
+- **Settings tab** — configure each analyzer: toggle on/off and adjust all scoring thresholds; settings persist via `browser.storage.local`
 - **Export** — download the full analysis as a JSON file
 
 ## Development setup
@@ -56,7 +56,7 @@ npx jest tests/unit/content.core.test.ts  # single file
 ```
 
 Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**.
-Current baseline: 95.77% stmts / 89.43% branches / 87.80% funcs / 95.66% lines.
+Current baseline: 95.14% stmts / 88.23% branches / 88.33% funcs / 95.56% lines.
 
 ## Architecture
 
@@ -71,7 +71,7 @@ The extension has three isolated execution contexts, each compiled to a separate
 
 **Communication flow:** Popup → `browser.tabs.sendMessage` → Content Script → `AnalysisResult` → Popup renders
 
-`src/content/` is split into focused modules: `types.ts` (interfaces), `utils.ts` (`getCssSelector`, `getHtmlSnippet`), and `analyzers/` (one file per category). `src/popup/` is split into `popup.ts`, `popup.css`, and `utils.ts`.
+`src/content/` is split into focused modules: `types.ts` (interfaces), `utils.ts` (`getCssSelector`, `getHtmlSnippet`), and `analyzers/` (one file per category). `src/popup/` is split into `popup.ts`, `popup.css`, `utils.ts`, and `settings.ts` (storage load/save/reset). `src/shared/` holds `browser.ts` and `settings.ts` (shared types and defaults used by both popup and content bundles).
 
 Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are defined in `src/content/types.ts`, re-exported from `content.ts`, and consumed via `import type` in `popup.ts` — erased before bundling, zero runtime overhead.
 
