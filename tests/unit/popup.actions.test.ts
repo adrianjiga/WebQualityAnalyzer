@@ -77,6 +77,7 @@ describe('runAnalysis', () => {
   beforeEach(() => {
     setupPopupDOM();
     jest.clearAllMocks();
+    (chrome.storage.local.get as jest.Mock).mockResolvedValue({});
     global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock');
     global.URL.revokeObjectURL = jest.fn();
     jest
@@ -112,6 +113,7 @@ describe('runAnalysis', () => {
 
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
       action: 'analyze',
+      settings: expect.any(Object),
     });
   });
 
