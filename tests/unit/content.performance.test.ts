@@ -300,3 +300,88 @@ describe('analyzePerformance', () => {
     expect(analyzePerformance().score).toBeGreaterThanOrEqual(0);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// analyzePerformance — custom settings
+// ══════════════════════════════════════════════════════════════════════════════
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
+
+describe('analyzePerformance with custom settings', () => {
+  beforeEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it('uses custom imageMaxWidth/imageMaxHeight', () => {
+    addImageWithDimensions(800, 600);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      imageMaxWidth: 500,
+      imageMaxHeight: 400,
+    });
+    const issue = result.issues.find((i) => i.type === 'Image Optimization');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('500x400');
+  });
+
+  it('does not flag image within custom threshold', () => {
+    addImageWithDimensions(800, 600);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      imageMaxWidth: 1920,
+      imageMaxHeight: 1080,
+    });
+    const issue = result.issues.find((i) => i.type === 'Image Optimization');
+    expect(issue).toBeUndefined();
+  });
+
+  it('uses custom lazyLoadThreshold', () => {
+    appendImgs(2);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      lazyLoadThreshold: 1,
+    });
+    const issue = result.issues.find((i) => i.type === 'Lazy Loading');
+    expect(issue).toBeDefined();
+  });
+
+  it('does not flag lazy loading within custom threshold', () => {
+    appendImgs(2);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      lazyLoadThreshold: 10,
+    });
+    const issue = result.issues.find((i) => i.type === 'Lazy Loading');
+    expect(issue).toBeUndefined();
+  });
+
+  it('uses custom externalResourcesThreshold', () => {
+    appendExternalScripts(5);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      externalResourcesThreshold: 3,
+    });
+    const issue = result.issues.find((i) => i.type === 'External Resources');
+    expect(issue).toBeDefined();
+  });
+
+  it('uses custom inlineStylesThreshold', () => {
+    appendSpansWithStyle(5);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      inlineStylesThreshold: 3,
+    });
+    const issue = result.issues.find((i) => i.type === 'Inline Styles');
+    expect(issue).toBeDefined();
+  });
+
+  it('uses custom externalLinksDeductionCap', () => {
+    appendExternalAnchors(20);
+    const resultDefault = analyzePerformance(DEFAULT_SETTINGS.performance);
+    const resultCapped = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      externalLinksDeductionCap: 3,
+    });
+    // With cap=3 the deduction is smaller so score is higher
+    expect(resultCapped.score).toBeGreaterThan(resultDefault.score);
+  });
+});
