@@ -1,7 +1,13 @@
 import type { CategoryResult, Issue } from '../types';
 import { getCssSelector, getHtmlSnippet } from '../utils';
+import {
+  AccessibilitySettings,
+  DEFAULT_SETTINGS,
+} from '../../shared/settings';
 
-export function analyzeAccessibility(): CategoryResult {
+export function analyzeAccessibility(
+  settings: AccessibilitySettings = DEFAULT_SETTINGS.accessibility
+): CategoryResult {
   const issues: Issue[] = [];
   const suggestions: string[] = [];
   let score = 100;
@@ -21,7 +27,7 @@ export function analyzeAccessibility(): CategoryResult {
       htmlSnippet: firstImg ? getHtmlSnippet(firstImg) : undefined,
     });
     suggestions.push('Add descriptive alt text to all images for screen readers');
-    score -= Math.min(25, imagesWithoutAlt.length * 3);
+    score -= Math.min(settings.missingAltCap, imagesWithoutAlt.length * settings.missingAltDeduction);
   }
 
   // Check for form labels
@@ -44,7 +50,7 @@ export function analyzeAccessibility(): CategoryResult {
       htmlSnippet: firstInput ? getHtmlSnippet(firstInput) : undefined,
     });
     suggestions.push('Add labels or aria-label attributes to all form inputs');
-    score -= Math.min(20, inputsWithoutLabels.length * 4);
+    score -= Math.min(settings.unlabelledInputCap, inputsWithoutLabels.length * settings.unlabelledInputDeduction);
   }
 
   // Check for color contrast (basic check)
@@ -83,7 +89,7 @@ export function analyzeAccessibility(): CategoryResult {
         htmlSnippet: firstSkippedHeading ? getHtmlSnippet(firstSkippedHeading) : undefined,
       });
       suggestions.push('Use heading levels in sequential order (h1, h2, h3, etc.)');
-      score -= 10;
+      score -= settings.headingHierarchyDeduction;
     }
   }
 

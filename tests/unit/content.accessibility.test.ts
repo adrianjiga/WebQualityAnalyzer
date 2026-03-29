@@ -346,3 +346,65 @@ describe('analyzeAccessibility', () => {
     expect(analyzeAccessibility().score).toBe(93);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// analyzeAccessibility — custom settings
+// ══════════════════════════════════════════════════════════════════════════════
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
+
+describe('analyzeAccessibility with custom settings', () => {
+  beforeEach(() => {
+    document.head.replaceChildren();
+    document.body.replaceChildren();
+  });
+
+  it('uses custom missingAltDeduction', () => {
+    appendImg('a.jpg');
+    appendImg('b.jpg');
+    const result = analyzeAccessibility({
+      ...DEFAULT_SETTINGS.accessibility,
+      missingAltDeduction: 10,
+    });
+    // 2 images * 10 = 20, capped at 25 → score 80
+    expect(result.score).toBe(80);
+  });
+
+  it('uses custom missingAltCap', () => {
+    appendImg('a.jpg');
+    appendImg('b.jpg');
+    appendImg('c.jpg');
+    const result = analyzeAccessibility({
+      ...DEFAULT_SETTINGS.accessibility,
+      missingAltDeduction: 3,
+      missingAltCap: 5,
+    });
+    // 3 * 3 = 9, capped at 5 → score 95
+    expect(result.score).toBe(95);
+  });
+
+  it('uses custom unlabelledInputDeduction', () => {
+    appendInput('text');
+    const result = analyzeAccessibility({
+      ...DEFAULT_SETTINGS.accessibility,
+      unlabelledInputDeduction: 8,
+    });
+    // 1 input * 8 = 8, capped at 20 → score 92
+    expect(result.score).toBe(92);
+  });
+
+  it('uses custom headingHierarchyDeduction', () => {
+    appendHeading(1, 'Title');
+    appendHeading(3, 'Skipped');
+    const result = analyzeAccessibility({
+      ...DEFAULT_SETTINGS.accessibility,
+      headingHierarchyDeduction: 20,
+    });
+    expect(result.score).toBe(80);
+  });
+
+  it('returns score 100 with no issues when enabled is true and page is clean', () => {
+    const result = analyzeAccessibility(DEFAULT_SETTINGS.accessibility);
+    expect(result.score).toBe(100);
+    expect(result.issues).toHaveLength(0);
+  });
+});
