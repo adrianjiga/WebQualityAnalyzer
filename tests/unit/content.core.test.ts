@@ -209,3 +209,51 @@ describe('getHtmlSnippet', () => {
     expect(snippet.endsWith('\u2026')).toBe(true);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// performQualityAnalysis — settings passthrough
+// ══════════════════════════════════════════════════════════════════════════════
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
+
+describe('performQualityAnalysis with settings', () => {
+  beforeEach(() => {
+    document.head.replaceChildren();
+    document.body.replaceChildren();
+  });
+
+  it('returns score 100 for accessibility when accessibility is disabled', () => {
+    const result = performQualityAnalysis({
+      ...DEFAULT_SETTINGS,
+      accessibility: { ...DEFAULT_SETTINGS.accessibility, enabled: false },
+    });
+    expect(result.categories.accessibility.score).toBe(100);
+    expect(result.categories.accessibility.issues).toHaveLength(0);
+  });
+
+  it('returns score 100 for seo when seo is disabled', () => {
+    const result = performQualityAnalysis({
+      ...DEFAULT_SETTINGS,
+      seo: { ...DEFAULT_SETTINGS.seo, enabled: false },
+    });
+    expect(result.categories.seo.score).toBe(100);
+    expect(result.categories.seo.issues).toHaveLength(0);
+  });
+
+  it('returns score 100 for performance when performance is disabled', () => {
+    const result = performQualityAnalysis({
+      ...DEFAULT_SETTINGS,
+      performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
+    });
+    expect(result.categories.performance.score).toBe(100);
+    expect(result.categories.performance.issues).toHaveLength(0);
+  });
+
+  it('overall score is 100 when all analyzers are disabled', () => {
+    const result = performQualityAnalysis({
+      accessibility: { ...DEFAULT_SETTINGS.accessibility, enabled: false },
+      seo: { ...DEFAULT_SETTINGS.seo, enabled: false },
+      performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
+    });
+    expect(result.score).toBe(100);
+  });
+});
