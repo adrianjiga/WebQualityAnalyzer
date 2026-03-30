@@ -101,6 +101,13 @@ describe('collectSettings', () => {
     expect(result.seo.titleMinLength).toBe(20);
   });
 
+  it('falls back to DEFAULT_SETTINGS value when input is empty/NaN', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    (document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement).value = '';
+    const result = collectSettings();
+    expect(result.accessibility.missingAltDeduction).toBe(DEFAULT_SETTINGS.accessibility.missingAltDeduction);
+  });
+
   it('reads enabled checkboxes correctly', () => {
     populateSettingsUI(DEFAULT_SETTINGS);
     (document.getElementById('settings-perf-enabled') as HTMLInputElement).checked = false;

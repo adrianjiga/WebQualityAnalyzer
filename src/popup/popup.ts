@@ -259,37 +259,40 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
 }
 
 export function collectSettings(): AnalyzerSettings {
-  const num = (id: string): number =>
-    parseInt((document.getElementById(id) as HTMLInputElement).value, 10) || 0;
+  const num = (id: string, fallback: number): number => {
+    const val = parseInt((document.getElementById(id) as HTMLInputElement).value, 10);
+    return Number.isNaN(val) ? fallback : val;
+  };
   const bool = (id: string): boolean =>
     (document.getElementById(id) as HTMLInputElement).checked;
+  const d = DEFAULT_SETTINGS;
 
   return {
     accessibility: {
       enabled: bool('settings-a11y-enabled'),
-      missingAltDeduction: num('settings-a11y-missingAltDeduction'),
-      missingAltCap: num('settings-a11y-missingAltCap'),
-      unlabelledInputDeduction: num('settings-a11y-unlabelledInputDeduction'),
-      unlabelledInputCap: num('settings-a11y-unlabelledInputCap'),
-      headingHierarchyDeduction: num('settings-a11y-headingHierarchyDeduction'),
+      missingAltDeduction: num('settings-a11y-missingAltDeduction', d.accessibility.missingAltDeduction),
+      missingAltCap: num('settings-a11y-missingAltCap', d.accessibility.missingAltCap),
+      unlabelledInputDeduction: num('settings-a11y-unlabelledInputDeduction', d.accessibility.unlabelledInputDeduction),
+      unlabelledInputCap: num('settings-a11y-unlabelledInputCap', d.accessibility.unlabelledInputCap),
+      headingHierarchyDeduction: num('settings-a11y-headingHierarchyDeduction', d.accessibility.headingHierarchyDeduction),
     },
     seo: {
       enabled: bool('settings-seo-enabled'),
-      titleMinLength: num('settings-seo-titleMinLength'),
-      titleMaxLength: num('settings-seo-titleMaxLength'),
-      metaDescMinLength: num('settings-seo-metaDescMinLength'),
-      metaDescMaxLength: num('settings-seo-metaDescMaxLength'),
-      noH1Deduction: num('settings-seo-noH1Deduction'),
-      multipleH1Deduction: num('settings-seo-multipleH1Deduction'),
+      titleMinLength: num('settings-seo-titleMinLength', d.seo.titleMinLength),
+      titleMaxLength: num('settings-seo-titleMaxLength', d.seo.titleMaxLength),
+      metaDescMinLength: num('settings-seo-metaDescMinLength', d.seo.metaDescMinLength),
+      metaDescMaxLength: num('settings-seo-metaDescMaxLength', d.seo.metaDescMaxLength),
+      noH1Deduction: num('settings-seo-noH1Deduction', d.seo.noH1Deduction),
+      multipleH1Deduction: num('settings-seo-multipleH1Deduction', d.seo.multipleH1Deduction),
     },
     performance: {
       enabled: bool('settings-perf-enabled'),
-      imageMaxWidth: num('settings-perf-imageMaxWidth'),
-      imageMaxHeight: num('settings-perf-imageMaxHeight'),
-      lazyLoadThreshold: num('settings-perf-lazyLoadThreshold'),
-      externalResourcesThreshold: num('settings-perf-externalResourcesThreshold'),
-      inlineStylesThreshold: num('settings-perf-inlineStylesThreshold'),
-      externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap'),
+      imageMaxWidth: num('settings-perf-imageMaxWidth', d.performance.imageMaxWidth),
+      imageMaxHeight: num('settings-perf-imageMaxHeight', d.performance.imageMaxHeight),
+      lazyLoadThreshold: num('settings-perf-lazyLoadThreshold', d.performance.lazyLoadThreshold),
+      externalResourcesThreshold: num('settings-perf-externalResourcesThreshold', d.performance.externalResourcesThreshold),
+      inlineStylesThreshold: num('settings-perf-inlineStylesThreshold', d.performance.inlineStylesThreshold),
+      externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap', d.performance.externalLinksDeductionCap),
     },
   };
 }
