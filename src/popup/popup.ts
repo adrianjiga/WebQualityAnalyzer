@@ -3,6 +3,8 @@ import './popup.css';
 import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
+import { loadSettings, saveSettings, resetSettings } from './settings';
+import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
 
 
 let currentAnalysis: AnalysisResult | null = null;
@@ -35,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
       exportResults(currentAnalysis);
     }
   });
+
+  // Settings
+  initSettings();
 });
 
 export async function runAnalysis(): Promise<void> {
@@ -63,8 +68,10 @@ export async function runAnalysis(): Promise<void> {
       updatePageInfo(tab.url);
 
       // Send message to content script
+      const settings = await loadSettings();
       const response = await browser.tabs.sendMessage(tab.id, {
         action: 'analyze',
+        settings,
       }) as AnalysisResult;
       currentAnalysis = response;
       displayResults(response);
@@ -192,6 +199,149 @@ function displayPerformance(category: CategoryResult): void {
     'performance-tab'
   ) as HTMLDivElement;
   displayCategoryContent(performanceTab, category, '⚡');
+}
+
+// ── Settings UI ──────────────────────────────────────────────────────────────
+
+export function initSettings(): void {
+  loadSettings()
+    .then((settings) => {
+      populateSettingsUI(settings);
+      attachSettingsListeners();
+    })
+    .catch(() => {
+      populateSettingsUI(DEFAULT_SETTINGS);
+      attachSettingsListeners();
+    });
+}
+
+export function populateSettingsUI(settings: AnalyzerSettings): void {
+  const set = (id: string, value: string | boolean): void => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (typeof value === 'boolean') {
+      (el as HTMLInputElement).checked = value;
+    } else {
+      (el as HTMLInputElement).value = value;
+    }
+  };
+
+  // Accessibility
+  set('settings-a11y-enabled', settings.accessibility.enabled);
+  set('settings-a11y-missingAltDeduction', String(settings.accessibility.missingAltDeduction));
+  set('settings-a11y-missingAltCap', String(settings.accessibility.missingAltCap));
+  set('settings-a11y-unlabelledInputDeduction', String(settings.accessibility.unlabelledInputDeduction));
+  set('settings-a11y-unlabelledInputCap', String(settings.accessibility.unlabelledInputCap));
+  set('settings-a11y-headingHierarchyDeduction', String(settings.accessibility.headingHierarchyDeduction));
+
+  // SEO
+  set('settings-seo-enabled', settings.seo.enabled);
+  set('settings-seo-titleMinLength', String(settings.seo.titleMinLength));
+  set('settings-seo-titleMaxLength', String(settings.seo.titleMaxLength));
+  set('settings-seo-metaDescMinLength', String(settings.seo.metaDescMinLength));
+  set('settings-seo-metaDescMaxLength', String(settings.seo.metaDescMaxLength));
+  set('settings-seo-noH1Deduction', String(settings.seo.noH1Deduction));
+  set('settings-seo-multipleH1Deduction', String(settings.seo.multipleH1Deduction));
+
+  // Performance
+  set('settings-perf-enabled', settings.performance.enabled);
+  set('settings-perf-imageMaxWidth', String(settings.performance.imageMaxWidth));
+  set('settings-perf-imageMaxHeight', String(settings.performance.imageMaxHeight));
+  set('settings-perf-lazyLoadThreshold', String(settings.performance.lazyLoadThreshold));
+  set('settings-perf-externalResourcesThreshold', String(settings.performance.externalResourcesThreshold));
+  set('settings-perf-inlineStylesThreshold', String(settings.performance.inlineStylesThreshold));
+  set('settings-perf-externalLinksDeductionCap', String(settings.performance.externalLinksDeductionCap));
+
+  // Apply disabled state
+  updateSectionDisabledState('settings-a11y-body', settings.accessibility.enabled);
+  updateSectionDisabledState('settings-seo-body', settings.seo.enabled);
+  updateSectionDisabledState('settings-perf-body', settings.performance.enabled);
+}
+
+export function collectSettings(): AnalyzerSettings {
+  const num = (id: string, fallback: number): number => {
+    const val = parseInt((document.getElementById(id) as HTMLInputElement).value, 10);
+    return Number.isNaN(val) ? fallback : val;
+  };
+  const bool = (id: string): boolean =>
+    (document.getElementById(id) as HTMLInputElement).checked;
+  const d = DEFAULT_SETTINGS;
+
+  const settings: AnalyzerSettings = {
+    accessibility: {
+      enabled: bool('settings-a11y-enabled'),
+      missingAltDeduction: num('settings-a11y-missingAltDeduction', d.accessibility.missingAltDeduction),
+      missingAltCap: num('settings-a11y-missingAltCap', d.accessibility.missingAltCap),
+      unlabelledInputDeduction: num('settings-a11y-unlabelledInputDeduction', d.accessibility.unlabelledInputDeduction),
+      unlabelledInputCap: num('settings-a11y-unlabelledInputCap', d.accessibility.unlabelledInputCap),
+      headingHierarchyDeduction: num('settings-a11y-headingHierarchyDeduction', d.accessibility.headingHierarchyDeduction),
+    },
+    seo: {
+      enabled: bool('settings-seo-enabled'),
+      titleMinLength: num('settings-seo-titleMinLength', d.seo.titleMinLength),
+      titleMaxLength: num('settings-seo-titleMaxLength', d.seo.titleMaxLength),
+      metaDescMinLength: num('settings-seo-metaDescMinLength', d.seo.metaDescMinLength),
+      metaDescMaxLength: num('settings-seo-metaDescMaxLength', d.seo.metaDescMaxLength),
+      noH1Deduction: num('settings-seo-noH1Deduction', d.seo.noH1Deduction),
+      multipleH1Deduction: num('settings-seo-multipleH1Deduction', d.seo.multipleH1Deduction),
+    },
+    performance: {
+      enabled: bool('settings-perf-enabled'),
+      imageMaxWidth: num('settings-perf-imageMaxWidth', d.performance.imageMaxWidth),
+      imageMaxHeight: num('settings-perf-imageMaxHeight', d.performance.imageMaxHeight),
+      lazyLoadThreshold: num('settings-perf-lazyLoadThreshold', d.performance.lazyLoadThreshold),
+      externalResourcesThreshold: num('settings-perf-externalResourcesThreshold', d.performance.externalResourcesThreshold),
+      inlineStylesThreshold: num('settings-perf-inlineStylesThreshold', d.performance.inlineStylesThreshold),
+      externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap', d.performance.externalLinksDeductionCap),
+    },
+  };
+  return sanitizeSettings(settings);
+}
+
+function sanitizeSettings(settings: AnalyzerSettings): AnalyzerSettings {
+  if (settings.seo.titleMaxLength <= settings.seo.titleMinLength) {
+    settings.seo.titleMaxLength = settings.seo.titleMinLength + 1;
+  }
+  if (settings.seo.metaDescMaxLength <= settings.seo.metaDescMinLength) {
+    settings.seo.metaDescMaxLength = settings.seo.metaDescMinLength + 1;
+  }
+  return settings;
+}
+
+function updateSectionDisabledState(bodyId: string, enabled: boolean): void {
+  document.getElementById(bodyId)?.classList.toggle('disabled', !enabled);
+}
+
+export function attachSettingsListeners(): void {
+  const toggleConfigs = [
+    { toggleId: 'settings-a11y-enabled', bodyId: 'settings-a11y-body' },
+    { toggleId: 'settings-seo-enabled', bodyId: 'settings-seo-body' },
+    { toggleId: 'settings-perf-enabled', bodyId: 'settings-perf-body' },
+  ];
+
+  toggleConfigs.forEach(({ toggleId, bodyId }) => {
+    const toggle = document.getElementById(toggleId) as HTMLInputElement;
+    if (!toggle) return;
+    // Prevent the toggle click from also toggling the parent <details>
+    toggle.addEventListener('click', (e) => e.stopPropagation());
+    toggle.addEventListener('change', () => {
+      updateSectionDisabledState(bodyId, toggle.checked);
+      saveSettings(collectSettings()).catch(console.error);
+    });
+  });
+
+  // Auto-save all number inputs on change
+  document.querySelectorAll('#settings-tab input[type="number"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      saveSettings(collectSettings()).catch(console.error);
+    });
+  });
+
+  // Reset button
+  document.getElementById('settings-reset-btn')?.addEventListener('click', async () => {
+    const defaults = await resetSettings();
+    populateSettingsUI(defaults);
+  });
 }
 
 export function displayCategoryContent(

@@ -16,6 +16,12 @@ const chromeMock = {
     query: jest.fn(),
     sendMessage: jest.fn(),
   },
+  storage: {
+    local: {
+      get: jest.fn(),
+      set: jest.fn(),
+    },
+  },
 };
 
 (globalThis as unknown as { chrome: typeof chrome }).chrome =

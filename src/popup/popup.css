@@ -304,3 +304,121 @@ details[open] > .issue-summary::before {
   color: #697b8f;
   word-break: break-all;
 }
+
+/* ── Settings ──────────────────────────────────────────────────────────────── */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-section {
+  border: 1px solid #dde3ea;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.settings-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  background: #f6f9fc;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 13px;
+  color: #0a2540;
+  user-select: none;
+}
+.settings-section-header::-webkit-details-marker {
+  display: none;
+}
+.settings-section-header::before {
+  content: '\25B6';
+  font-size: 9px;
+  color: #697b8f;
+  transition: transform 0.15s;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+details[open] > .settings-section-header::before {
+  transform: rotate(90deg);
+}
+.settings-section-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.settings-section-body.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.settings-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.settings-field label {
+  font-size: 12px;
+  color: #697b8f;
+  flex: 1;
+}
+.settings-field input[type='number'] {
+  width: 60px;
+  padding: 5px 7px;
+  border: 1px solid #dde3ea;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: left;
+  color: #0a2540;
+  background: #fff;
+}
+.settings-field input[type='number']:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.15);
+}
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+.settings-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #a0aec0;
+  border-radius: 9px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.settings-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  bottom: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.settings-toggle input:checked + .settings-toggle-slider {
+  background: #0070f3;
+}
+.settings-toggle input:checked + .settings-toggle-slider::before {
+  transform: translateX(16px);
+}
+.settings-reset-btn {
+  flex: none;
+  width: 100%;
+  margin-top: 2px;
+}

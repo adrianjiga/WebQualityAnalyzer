@@ -1,7 +1,10 @@
 import type { CategoryResult, Issue } from '../types';
 import { getCssSelector, getHtmlSnippet } from '../utils';
+import { SeoSettings, DEFAULT_SETTINGS } from '../../shared/settings';
 
-export function analyzeSEO(): CategoryResult {
+export function analyzeSEO(
+  settings: SeoSettings = DEFAULT_SETTINGS.seo
+): CategoryResult {
   const issues: Issue[] = [];
   const suggestions: string[] = [];
   let score = 100;
@@ -15,8 +18,8 @@ export function analyzeSEO(): CategoryResult {
       severity: 'high'
     });
     suggestions.push('Add a descriptive page title (50-60 characters recommended)');
-    score -= 25;
-  } else if (title.length < 10) {
+    score -= 25; // TODO: expose as settings.noTitleDeduction
+  } else if (title.length < settings.titleMinLength) {
     issues.push({
       type: 'Page Title',
       message: 'Page title is too short',
@@ -24,7 +27,7 @@ export function analyzeSEO(): CategoryResult {
     });
     suggestions.push('Make page title more descriptive (50-60 characters recommended)');
     score -= 15;
-  } else if (title.length > 60) {
+  } else if (title.length > settings.titleMaxLength) {
     issues.push({
       type: 'Page Title',
       message: 'Page title is too long',
@@ -43,10 +46,10 @@ export function analyzeSEO(): CategoryResult {
       severity: 'high'
     });
     suggestions.push('Add a meta description (150-160 characters recommended)');
-    score -= 20;
+    score -= 20; // TODO: expose as settings.noMetaDescDeduction
   } else {
     const content = metaDescription.getAttribute('content') || '';
-    if (content.length < 120) {
+    if (content.length < settings.metaDescMinLength) {
       issues.push({
         type: 'Meta Description',
         message: 'Meta description is too short',
@@ -54,7 +57,7 @@ export function analyzeSEO(): CategoryResult {
       });
       suggestions.push('Expand meta description to 150-160 characters');
       score -= 10;
-    } else if (content.length > 160) {
+    } else if (content.length > settings.metaDescMaxLength) {
       issues.push({
         type: 'Meta Description',
         message: 'Meta description is too long',
@@ -75,7 +78,7 @@ export function analyzeSEO(): CategoryResult {
       severity: 'high'
     });
     suggestions.push('Add a main H1 heading to improve SEO and accessibility');
-    score -= 20;
+    score -= settings.noH1Deduction;
   } else if (h1Count > 1) {
     const firstH1 = h1Elements[0];
     issues.push({
@@ -86,7 +89,7 @@ export function analyzeSEO(): CategoryResult {
       htmlSnippet: firstH1 ? getHtmlSnippet(firstH1) : undefined,
     });
     suggestions.push('Use only one H1 heading per page');
-    score -= 15;
+    score -= settings.multipleH1Deduction;
   }
 
   // Check for canonical URL
