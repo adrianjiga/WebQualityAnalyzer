@@ -18,7 +18,7 @@ export function analyzeSEO(
       severity: 'high'
     });
     suggestions.push('Add a descriptive page title (50-60 characters recommended)');
-    score -= 25;
+    score -= 25; // TODO: expose as settings.noTitleDeduction
   } else if (title.length < settings.titleMinLength) {
     issues.push({
       type: 'Page Title',
@@ -46,7 +46,7 @@ export function analyzeSEO(
       severity: 'high'
     });
     suggestions.push('Add a meta description (150-160 characters recommended)');
-    score -= 20;
+    score -= 20; // TODO: expose as settings.noMetaDescDeduction
   } else {
     const content = metaDescription.getAttribute('content') || '';
     if (content.length < settings.metaDescMinLength) {
