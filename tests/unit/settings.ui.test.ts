@@ -114,6 +114,22 @@ describe('collectSettings', () => {
     const result = collectSettings();
     expect(result.performance.enabled).toBe(false);
   });
+
+  it('clamps titleMaxLength to titleMinLength + 1 when inverted', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    (document.getElementById('settings-seo-titleMinLength') as HTMLInputElement).value = '80';
+    (document.getElementById('settings-seo-titleMaxLength') as HTMLInputElement).value = '40';
+    const result = collectSettings();
+    expect(result.seo.titleMaxLength).toBe(81);
+  });
+
+  it('clamps metaDescMaxLength to metaDescMinLength + 1 when inverted', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    (document.getElementById('settings-seo-metaDescMinLength') as HTMLInputElement).value = '200';
+    (document.getElementById('settings-seo-metaDescMaxLength') as HTMLInputElement).value = '100';
+    const result = collectSettings();
+    expect(result.seo.metaDescMaxLength).toBe(201);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -267,7 +267,7 @@ export function collectSettings(): AnalyzerSettings {
     (document.getElementById(id) as HTMLInputElement).checked;
   const d = DEFAULT_SETTINGS;
 
-  return {
+  const settings: AnalyzerSettings = {
     accessibility: {
       enabled: bool('settings-a11y-enabled'),
       missingAltDeduction: num('settings-a11y-missingAltDeduction', d.accessibility.missingAltDeduction),
@@ -295,6 +295,17 @@ export function collectSettings(): AnalyzerSettings {
       externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap', d.performance.externalLinksDeductionCap),
     },
   };
+  return sanitizeSettings(settings);
+}
+
+function sanitizeSettings(settings: AnalyzerSettings): AnalyzerSettings {
+  if (settings.seo.titleMaxLength <= settings.seo.titleMinLength) {
+    settings.seo.titleMaxLength = settings.seo.titleMinLength + 1;
+  }
+  if (settings.seo.metaDescMaxLength <= settings.seo.metaDescMinLength) {
+    settings.seo.metaDescMaxLength = settings.seo.metaDescMinLength + 1;
+  }
+  return settings;
 }
 
 function updateSectionDisabledState(bodyId: string, enabled: boolean): void {
