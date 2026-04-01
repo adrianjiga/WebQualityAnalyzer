@@ -22,7 +22,7 @@
     "@types/chrome": "^0.1.38",
     "@types/jest": "^30.0.0",
     "@types/webextension-polyfill": "^0.12.5",
-    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.57.2",
     "babel-loader": "^10.1.1",
     "copy-webpack-plugin": "^14.0.0",
