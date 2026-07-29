@@ -4,6 +4,12 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # TypeScript 7 is not yet supported by the toolchain: every
+      # @typescript-eslint release peers `typescript >=4.8.4 <6.1.0`, and
+      # ts-jest peers `>=4.3 <7`. Drop this once both support it. See PR #130.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
