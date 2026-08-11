@@ -36,12 +36,22 @@ const moduleRules = {
  * injection into a page by a test runner (`page.addScriptTag`, `cy.window`) or any other
  * caller with a DOM.
  *
- * `mode: 'production'` and no source map, unlike the extension bundles — this artifact is
- * committed to the repo so consumers can depend on the repo directly without running a build,
- * and a 400 KB dev bundle with an inline map is not something to keep in git history.
+ * Deliberately **not minified**, unlike a bundle you would ship over a network. This artifact
+ * is committed to git, so the properties that matter are review and history, not bytes:
+ *
+ *   - Minified output is a single line with no newlines at all, so every analyzer change
+ *     rewrites that whole line. The diff is unreviewable and git's line-based delta
+ *     compression has nothing to work with.
+ *   - It is injected into a local test page, never fetched over a network, so the ~18 KB
+ *     saving buys nothing.
+ *   - Terser renames every local identifier, so a stack trace from an assertion failing
+ *     inside an analyzer points at `r` and `i` instead of the real function names.
+ *
+ * `mode: 'none'` rather than `'development'`: no dev-only instrumentation, just readable
+ * output. No source map either — the bundle is already the readable form.
  */
 const libConfig = {
-  mode: 'production',
+  mode: 'none',
   entry: './src/index.ts',
   output: {
     path: resolve(__dirname, 'dist', 'lib'),
