@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "dist/lib",
+    "rootDir": "src"
+  },
+  "include": ["src/index.ts", "src/content/**/*", "src/shared/settings.ts"],
+  "exclude": ["src/content/content.ts"]
+}

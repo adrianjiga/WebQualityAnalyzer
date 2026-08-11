@@ -90,8 +90,6 @@ out
 # Negation needs the directory opened first — git will not descend into an ignored dir.
 dist/*
 !dist/lib/
-dist/lib/*
-!dist/lib/wqa.js
 
 # Gatsby files
 .cache/
