@@ -29,3 +29,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # dist/lib/wqa.js is committed so consumers can depend on this repo as a git dependency
+      # without running a build. A committed artifact drifts from its source the first time
+      # someone edits an analyzer and forgets to rebuild — and a stale bundle fails silently,
+      # since consumers would keep asserting against the old logic. The build above regenerates
+      # it, so any difference here means the commit is out of date.
+      - name: Verify the committed library bundle is up to date
+        run: |
+          if ! git diff --quiet -- dist/lib/wqa.js; then
+            echo "::error::dist/lib/wqa.js is stale. Run 'npm run build:lib' and commit the result."
+            git diff --stat -- dist/lib/wqa.js
+            exit 1
+          fi
+          echo "dist/lib/wqa.js matches its source."
