@@ -85,7 +85,13 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# Build output is ignored, except the committed library bundle: consumers depend on this
+# repo directly via a git dependency, so the artifact must be present without a build step.
+# Negation needs the directory opened first — git will not descend into an ignored dir.
+dist/*
+!dist/lib/
+dist/lib/*
+!dist/lib/wqa.js
 
 # Gatsby files
 .cache/

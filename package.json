@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Web quality analysis browser extension for developers and QA professionals",
   "scripts": {
-    "build": "webpack --env browser=chrome && webpack --env browser=firefox",
+    "build": "webpack --env browser=chrome && webpack --env browser=firefox && webpack --env lib",
     "build:chrome": "webpack --env browser=chrome",
     "build:firefox": "webpack --env browser=firefox",
     "dev": "webpack --watch --env browser=chrome",
@@ -12,7 +12,8 @@
     "dev:firefox": "webpack --watch --env browser=firefox",
     "test": "jest",
     "test:watch": "jest --watch",
-    "lint": "eslint src tests"
+    "lint": "eslint src tests",
+    "build:lib": "webpack --env lib"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
@@ -37,5 +38,17 @@
     "webextension-polyfill": "^0.12.0",
     "webpack": "^5.109.2",
     "webpack-cli": "^7.2.1"
-  }
+  },
+  "main": "dist/lib/wqa.js",
+  "types": "dist/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/wqa.js"
+    },
+    "./wqa.js": "./dist/lib/wqa.js"
+  },
+  "files": [
+    "dist/lib"
+  ]
 }
