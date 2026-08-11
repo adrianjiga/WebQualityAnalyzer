@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Web quality analysis browser extension for developers and QA professionals",
   "scripts": {
-    "build": "webpack --env browser=chrome && webpack --env browser=firefox && webpack --env lib",
+    "build": "webpack --env browser=chrome && webpack --env browser=firefox && npm run build:lib",
     "build:chrome": "webpack --env browser=chrome",
     "build:firefox": "webpack --env browser=firefox",
     "dev": "webpack --watch --env browser=chrome",
@@ -13,7 +13,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src tests",
-    "build:lib": "webpack --env lib"
+    "build:lib": "webpack --env lib && npm run build:types",
+    "build:types": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
