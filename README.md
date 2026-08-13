@@ -2,6 +2,10 @@
 
 Audits web pages for accessibility, SEO, and performance issues and gives an instant quality score.
 
+> **Architecture** — this repository is one of six that behave as a single system.
+> The [cross-repo architecture notes](https://adrianjiga.github.io/qa/architecture)
+> cover the `data-cy` contract, the coordinated-deploy problem, and the known gaps.
+
 Ships in two forms from one codebase:
 
 - **A Chrome and Firefox Manifest V3 browser extension** — point it at a page, get a scored report in a popup.
