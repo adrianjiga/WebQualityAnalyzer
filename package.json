@@ -38,7 +38,7 @@
     "typescript": "^5.9.3",
     "webextension-polyfill": "^0.12.0",
     "webpack": "^5.109.2",
-    "webpack-cli": "^7.2.1"
+    "webpack-cli": "^7.2.3"
   },
   "main": "dist/lib/wqa.js",
   "types": "dist/lib/index.d.ts",
