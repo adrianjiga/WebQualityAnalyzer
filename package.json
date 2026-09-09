@@ -23,7 +23,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@types/chrome": "^0.2.9",
     "@types/jest": "^30.0.0",
-    "@types/webextension-polyfill": "^0.12.5",
+    "@types/webextension-polyfill": "^0.12.6",
     "@typescript-eslint/eslint-plugin": "^8.68.0",
     "@typescript-eslint/parser": "^8.66.0",
     "babel-loader": "^10.1.1",
