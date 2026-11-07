@@ -34,8 +34,8 @@ const EMPTY_CATEGORY = {
  * (`src/index.ts`) expose it to any caller with a page: a test runner, a CI script, a
  * headless browser.
  *
- * A disabled category scores 100 rather than 0 — it is "nothing found wrong", not "perfect",
- * and averaging a 0 for a category the caller switched off would misreport the page.
+ * Disabled categories are reported with a score of 100 but are excluded from the overall
+ * average. If every category is disabled, the overall score is 100 because no checks ran.
  */
 function performQualityAnalysis(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_3__.DEFAULT_SETTINGS) {
     const accessibility = settings.accessibility.enabled
@@ -45,7 +45,14 @@ function performQualityAnalysis(settings = _shared_settings__WEBPACK_IMPORTED_MO
     const performance = settings.performance.enabled
         ? (0,_analyzers_performance__WEBPACK_IMPORTED_MODULE_2__.analyzePerformance)(settings.performance)
         : EMPTY_CATEGORY;
-    const overallScore = Math.round((accessibility.score + seo.score + performance.score) / 3);
+    const enabledScores = [
+        settings.accessibility.enabled ? accessibility.score : null,
+        settings.seo.enabled ? seo.score : null,
+        settings.performance.enabled ? performance.score : null,
+    ].filter((score) => score !== null);
+    const overallScore = enabledScores.length
+        ? Math.round(enabledScores.reduce((total, score) => total + score, 0) / enabledScores.length)
+        : 100;
     return {
         score: overallScore,
         pageInfo: {
@@ -90,12 +97,19 @@ function analyzeAccessibility(settings = _shared_settings__WEBPACK_IMPORTED_MODU
         score -= Math.min(settings.missingAltCap, imagesWithoutAlt.length * settings.missingAltDeduction);
     }
     // Check for form labels
-    const inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], textarea, select');
+    const inputs = document.querySelectorAll('input:not([type="hidden"]), textarea, select');
     const inputsWithoutLabels = Array.from(inputs).filter((input) => {
-        const id = input.getAttribute('id');
-        const ariaLabel = input.getAttribute('aria-label');
-        const label = id ? document.querySelector(`label[for="${id}"]`) : null;
-        return !label && !ariaLabel;
+        const ariaLabel = input.getAttribute('aria-label')?.trim();
+        const labelledBy = input
+            .getAttribute('aria-labelledby')
+            ?.trim()
+            .split(/\s+/)
+            .some((id) => {
+            const label = document.getElementById(id);
+            return Boolean(label?.textContent?.trim());
+        });
+        const hasAssociatedLabel = Array.from(document.getElementsByTagName('label')).some((label) => label.htmlFor === input.id || label.contains(input));
+        return !hasAssociatedLabel && !ariaLabel && !labelledBy;
     });
     if (inputsWithoutLabels.length > 0) {
         const firstInput = inputsWithoutLabels[0];
@@ -216,6 +230,8 @@ const DEFAULT_SETTINGS = {
         titleMaxLength: 60,
         metaDescMinLength: 120,
         metaDescMaxLength: 160,
+        noTitleDeduction: 25,
+        noMetaDescDeduction: 20,
         noH1Deduction: 20,
         multipleH1Deduction: 15,
     },
@@ -225,10 +241,16 @@ const DEFAULT_SETTINGS = {
         imageMaxHeight: 1080,
         lazyLoadThreshold: 3,
         externalResourcesThreshold: 10,
+        externalResourcesDeductionPerResource: 2,
+        externalResourcesDeductionCap: 15,
         inlineStylesThreshold: 20,
         externalLinksDeductionCap: 10,
     },
 };
+Object.freeze(DEFAULT_SETTINGS.accessibility);
+Object.freeze(DEFAULT_SETTINGS.seo);
+Object.freeze(DEFAULT_SETTINGS.performance);
+Object.freeze(DEFAULT_SETTINGS);
 
 
 /***/ }),
@@ -256,7 +278,7 @@ function analyzeSEO(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_1__.DEF
             severity: 'high'
         });
         suggestions.push('Add a descriptive page title (50-60 characters recommended)');
-        score -= 25; // TODO: expose as settings.noTitleDeduction
+        score -= settings.noTitleDeduction;
     }
     else if (title.length < settings.titleMinLength) {
         issues.push({
@@ -285,7 +307,7 @@ function analyzeSEO(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_1__.DEF
             severity: 'high'
         });
         suggestions.push('Add a meta description (150-160 characters recommended)');
-        score -= 20; // TODO: expose as settings.noMetaDescDeduction
+        score -= settings.noMetaDescDeduction;
     }
     else {
         const content = metaDescription.getAttribute('content') || '';
@@ -368,6 +390,7 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
     const largeImages = Array.from(images).filter((img) => {
         return img.naturalWidth > settings.imageMaxWidth || img.naturalHeight > settings.imageMaxHeight;
     });
+    const imagesWithUnknownDimensions = Array.from(images).filter((img) => img.naturalWidth === 0 || img.naturalHeight === 0);
     if (largeImages.length > 0) {
         const firstLarge = largeImages[0];
         issues.push({
@@ -379,6 +402,9 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
         });
         suggestions.push('Optimize large images and use appropriate formats (WebP, AVIF)');
         score -= Math.min(20, largeImages.length * 3);
+    }
+    if (imagesWithUnknownDimensions.length > 0) {
+        suggestions.push(`${imagesWithUnknownDimensions.length} images could not be checked for intrinsic dimensions; verify they load successfully and inspect their source sizes`);
     }
     // Check for images without loading attribute
     const imagesWithoutLoading = Array.from(images).filter(img => !img.getAttribute('loading'));
@@ -402,7 +428,8 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
             severity: 'medium'
         });
         suggestions.push('Consider bundling or reducing external resources to improve load times');
-        score -= Math.min(15, (totalExternal - settings.externalResourcesThreshold) * 2); // TODO: expose cap (15) and per-resource deduction (2) as settings
+        score -= Math.min(settings.externalResourcesDeductionCap, (totalExternal - settings.externalResourcesThreshold) *
+            settings.externalResourcesDeductionPerResource);
     }
     // Check for inline styles
     const elementsWithInlineStyles = document.querySelectorAll('[style]');
@@ -416,9 +443,18 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
         score -= 5;
     }
     // Check for external links without proper attributes
-    const externalLinks = Array.from(document.querySelectorAll('a[href^="http"]')).filter((link) => {
+    const externalLinks = Array.from(document.querySelectorAll('a[href]')).filter((link) => {
         const href = link.getAttribute('href');
-        return href && !href.includes(window.location.hostname);
+        if (!href)
+            return false;
+        try {
+            const target = new URL(href, window.location.href);
+            return ((target.protocol === 'http:' || target.protocol === 'https:') &&
+                target.hostname !== window.location.hostname);
+        }
+        catch {
+            return false;
+        }
     });
     const externalLinksWithoutRel = externalLinks.filter((link) => !link.getAttribute('rel'));
     if (externalLinksWithoutRel.length > 0) {
@@ -468,24 +504,47 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
 /******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/define property getters */
-/******/ 	// define getter/value functions for harmony exports
-/******/ 	__webpack_require__.d = (exports, definition) => {
-/******/ 		for(var key in definition) {
-/******/ 			if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 	(() => {
+/******/ 		// define getter/value functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
+/******/ 				}
 /******/ 			}
-/******/ 		}
-/******/ 	};
+/******/ 		};
+/******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop));
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = (exports) => {
-/******/ 		Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
 /******/ 	
 /************************************************************************/
 let __webpack_exports__ = {};

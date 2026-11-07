@@ -65,10 +65,21 @@ const libConfig = {
   devtool: false,
 };
 
+const esmLibConfig = {
+  ...libConfig,
+  output: {
+    ...libConfig.output,
+    filename: 'wqa.mjs',
+    library: { type: 'module' },
+    iife: false,
+    clean: false,
+  },
+  experiments: { outputModule: true },
+};
+
 export default (env) => {
-  if (env?.lib) {
-    return libConfig;
-  }
+  if (env?.lib) return libConfig;
+  if (env?.esmLib) return esmLibConfig;
 
   const browser = env?.browser ?? 'chrome';
   if (browser !== 'chrome' && browser !== 'firefox') {

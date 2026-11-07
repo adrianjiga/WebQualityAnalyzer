@@ -11,7 +11,7 @@ import { AnalyzerSettings } from '../shared/settings';
  * (`src/index.ts`) expose it to any caller with a page: a test runner, a CI script, a
  * headless browser.
  *
- * A disabled category scores 100 rather than 0 — it is "nothing found wrong", not "perfect",
- * and averaging a 0 for a category the caller switched off would misreport the page.
+ * Disabled categories are reported with a score of 100 but are excluded from the overall
+ * average. If every category is disabled, the overall score is 100 because no checks ran.
  */
 export declare function performQualityAnalysis(settings?: AnalyzerSettings): AnalysisResult;

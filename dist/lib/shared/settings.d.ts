@@ -12,6 +12,8 @@ export interface SeoSettings {
     titleMaxLength: number;
     metaDescMinLength: number;
     metaDescMaxLength: number;
+    noTitleDeduction: number;
+    noMetaDescDeduction: number;
     noH1Deduction: number;
     multipleH1Deduction: number;
 }
@@ -21,6 +23,8 @@ export interface PerformanceSettings {
     imageMaxHeight: number;
     lazyLoadThreshold: number;
     externalResourcesThreshold: number;
+    externalResourcesDeductionPerResource: number;
+    externalResourcesDeductionCap: number;
     inlineStylesThreshold: number;
     externalLinksDeductionCap: number;
 }

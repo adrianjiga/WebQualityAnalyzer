@@ -65,9 +65,10 @@ npm test              # Jest test suite (with coverage)
 
 The analyzers touch nothing but `document` and `window.location` — no `browser.*`, no `chrome.*`, no extension lifecycle. The extension is one consumer of them, not their owner, so anything with a live page can run the same audit.
 
-`npm run build:lib` produces two things in `dist/lib/`:
+`npm run build:lib` produces the browser IIFE, an ESM module entry for package imports, and TypeScript declarations in `dist/lib/`:
 
 - `wqa.js` — a self-contained IIFE that assigns `globalThis.WebQualityAnalyzer`
+- `wqa.mjs` — an ES module with named exports matching the declarations and package root entry
 - `*.d.ts` — type declarations, so a TypeScript consumer can type the result without depending on the bundle at runtime
 
 ### Install
