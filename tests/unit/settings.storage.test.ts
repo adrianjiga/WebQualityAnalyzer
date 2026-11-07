@@ -13,6 +13,7 @@ describe('loadSettings', () => {
     storageGet.mockResolvedValue({});
     const result = await loadSettings();
     expect(result).toEqual(DEFAULT_SETTINGS);
+    expect(result).not.toBe(DEFAULT_SETTINGS);
   });
 
   it('returns stored settings when present', async () => {
@@ -89,5 +90,7 @@ describe('resetSettings', () => {
       [STORAGE_KEY]: DEFAULT_SETTINGS,
     });
     expect(result).toEqual(DEFAULT_SETTINGS);
+    expect(result).not.toBe(DEFAULT_SETTINGS);
+    expect(result).not.toBe(storageSet.mock.calls[0][0][STORAGE_KEY]);
   });
 });

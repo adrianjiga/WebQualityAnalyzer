@@ -19,8 +19,9 @@ export async function saveSettings(settings: AnalyzerSettings): Promise<void> {
 }
 
 export async function resetSettings(): Promise<AnalyzerSettings> {
-  await saveSettings(DEFAULT_SETTINGS);
-  return DEFAULT_SETTINGS;
+  const defaults = cloneDefaults();
+  await saveSettings(defaults);
+  return cloneDefaults();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

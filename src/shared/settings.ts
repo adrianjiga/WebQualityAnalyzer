@@ -63,3 +63,8 @@ export const DEFAULT_SETTINGS: AnalyzerSettings = {
     externalLinksDeductionCap: 10,
   },
 };
+
+Object.freeze(DEFAULT_SETTINGS.accessibility);
+Object.freeze(DEFAULT_SETTINGS.seo);
+Object.freeze(DEFAULT_SETTINGS.performance);
+Object.freeze(DEFAULT_SETTINGS);
