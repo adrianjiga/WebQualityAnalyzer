@@ -3,7 +3,7 @@ import { getCssSelector, getHtmlSnippet } from '../../src/content/utils';
 
 // ─── Message-listener capture ─────────────────────────────────────────────────
 type MessageListener = (
-  request: { action: string },
+  request: unknown,
   sender: chrome.runtime.MessageSender
 ) => Promise<unknown> | undefined;
 
@@ -111,6 +111,28 @@ describe('Chrome message listener', () => {
       {} as chrome.runtime.MessageSender
     );
     expect(result).toBeUndefined();
+  });
+
+  it.each([null, undefined, 'analyze', 12, [], {}])(
+    'ignores malformed message payload %p',
+    (request) => {
+      expect(() =>
+        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
+      ).not.toThrow();
+      expect(
+        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
+      ).toBeUndefined();
+    }
+  );
+
+  it('falls back to defaults when an analyze message has malformed settings', async () => {
+    const result = capturedMessageListener(
+      { action: 'analyze', settings: { accessibility: null } },
+      {} as chrome.runtime.MessageSender
+    );
+
+    expect(result).toBeInstanceOf(Promise);
+    await expect(result).resolves.toHaveProperty('categories');
   });
 });
 
