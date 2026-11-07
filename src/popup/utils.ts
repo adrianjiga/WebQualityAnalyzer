@@ -31,7 +31,10 @@ export function exportResults(analysis: AnalysisResult): void {
   a.href = url;
   a.download = `quality-analysis-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    a.click();
+  } finally {
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 }

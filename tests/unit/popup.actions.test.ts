@@ -10,6 +10,7 @@ describe('exportResults', () => {
 
   beforeEach(() => {
     setupPopupDOM();
+    jest.useFakeTimers();
     global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-url');
     global.URL.revokeObjectURL = jest.fn();
     clickSpy = jest
@@ -20,6 +21,7 @@ describe('exportResults', () => {
   afterEach(() => {
     clickSpy.mockRestore();
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   it('calls URL.createObjectURL with a Blob', () => {
@@ -39,8 +41,10 @@ describe('exportResults', () => {
     );
   });
 
-  it('calls URL.revokeObjectURL after the download is triggered', () => {
+  it('revokes the object URL after the download has had time to start', () => {
     exportResults(buildResult());
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1000);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
   });
 
