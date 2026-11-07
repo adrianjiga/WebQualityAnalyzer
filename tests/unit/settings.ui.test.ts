@@ -150,6 +150,15 @@ describe('attachSettingsListeners', () => {
     );
   });
 
+  it('does not attach duplicate save listeners when initialized repeatedly', () => {
+    attachSettingsListeners();
+    const input = document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement;
+    input.value = '7';
+    input.dispatchEvent(new Event('change'));
+
+    expect(storageSet).toHaveBeenCalledTimes(1);
+  });
+
   it('toggles .disabled on a11y body when a11y toggle changes', () => {
     const toggle = document.getElementById('settings-a11y-enabled') as HTMLInputElement;
     toggle.checked = false;

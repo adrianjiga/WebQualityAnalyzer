@@ -8,6 +8,7 @@ import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
 
 
 let currentAnalysis: AnalysisResult | null = null;
+const settingsListenersAttached = new WeakSet<EventTarget>();
 
 export function initializePopup(): void {
   const analyzeButton = document.getElementById(
@@ -337,7 +338,8 @@ export function attachSettingsListeners(): void {
 
   toggleConfigs.forEach(({ toggleId, bodyId }) => {
     const toggle = document.getElementById(toggleId) as HTMLInputElement;
-    if (!toggle) return;
+    if (!toggle || settingsListenersAttached.has(toggle)) return;
+    settingsListenersAttached.add(toggle);
     // Prevent the toggle click from also toggling the parent <details>
     toggle.addEventListener('click', (e) => e.stopPropagation());
     toggle.addEventListener('change', () => {
@@ -348,16 +350,22 @@ export function attachSettingsListeners(): void {
 
   // Auto-save all number inputs on change
   document.querySelectorAll('#settings-tab input[type="number"]').forEach((input) => {
+    if (settingsListenersAttached.has(input)) return;
+    settingsListenersAttached.add(input);
     input.addEventListener('change', () => {
       saveSettings(collectSettings()).catch(console.error);
     });
   });
 
   // Reset button
-  document.getElementById('settings-reset-btn')?.addEventListener('click', async () => {
+  const resetButton = document.getElementById('settings-reset-btn');
+  if (resetButton && !settingsListenersAttached.has(resetButton)) {
+    settingsListenersAttached.add(resetButton);
+    resetButton.addEventListener('click', async () => {
     const defaults = await resetSettings();
     populateSettingsUI(defaults);
-  });
+    });
+  }
 }
 
 export function displayCategoryContent(
