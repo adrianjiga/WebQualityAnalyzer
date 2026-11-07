@@ -300,8 +300,8 @@ function analyzeSEO(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_1__.DEF
     const suggestions = [];
     let score = 100;
     // Check for page title
-    const title = document.title;
-    if (!title || title.trim() === '') {
+    const title = document.title.trim();
+    if (!title) {
         issues.push({
             type: 'Page Title',
             message: 'Page has no title',
@@ -330,7 +330,7 @@ function analyzeSEO(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_1__.DEF
     }
     // Check for meta description
     const metaDescription = document.querySelector('meta[name="description"]');
-    if (!metaDescription || !metaDescription.getAttribute('content')) {
+    if (!metaDescription || !metaDescription.getAttribute('content')?.trim()) {
         issues.push({
             type: 'Meta Description',
             message: 'Missing meta description',
@@ -340,7 +340,7 @@ function analyzeSEO(settings = _shared_settings__WEBPACK_IMPORTED_MODULE_1__.DEF
         score -= settings.noMetaDescDeduction;
     }
     else {
-        const content = metaDescription.getAttribute('content') || '';
+        const content = metaDescription.getAttribute('content')?.trim() || '';
         if (content.length < settings.metaDescMinLength) {
             issues.push({
                 type: 'Meta Description',
@@ -448,9 +448,24 @@ function analyzePerformance(settings = _shared_settings__WEBPACK_IMPORTED_MODULE
         score -= 10;
     }
     // Check for external resources
-    const externalScripts = document.querySelectorAll('script[src^="http"]');
-    const externalStyles = document.querySelectorAll('link[href^="http"]');
-    const totalExternal = externalScripts.length + externalStyles.length;
+    const externalResources = new Set();
+    document.querySelectorAll('script[src], link[rel~="stylesheet"][href]').forEach((resource) => {
+        const attribute = resource.tagName.toLowerCase() === 'script' ? 'src' : 'href';
+        const rawUrl = resource.getAttribute(attribute);
+        if (!rawUrl)
+            return;
+        try {
+            const url = new URL(rawUrl, window.location.href);
+            if ((url.protocol === 'http:' || url.protocol === 'https:') &&
+                url.origin !== window.location.origin) {
+                externalResources.add(url.href);
+            }
+        }
+        catch {
+            // Ignore invalid resource URLs.
+        }
+    });
+    const totalExternal = externalResources.size;
     if (totalExternal > settings.externalResourcesThreshold) {
         issues.push({
             type: 'External Resources',

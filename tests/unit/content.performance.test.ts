@@ -185,6 +185,31 @@ describe('analyzePerformance', () => {
 
   // ── External resources ──────────────────────────────────────────────────────
   describe('external resources', () => {
+    it('ignores same-origin scripts and stylesheets', () => {
+      const script = document.createElement('script');
+      script.src = `${window.location.origin}/app.js`;
+      const stylesheet = document.createElement('link');
+      stylesheet.rel = 'stylesheet';
+      stylesheet.href = `${window.location.origin}/app.css`;
+      document.head.append(script, stylesheet);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Resources')
+      ).toBe(false);
+    });
+
+    it('counts duplicate external resource URLs once', () => {
+      for (let i = 0; i < 11; i++) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.example.com/shared.js';
+        document.head.appendChild(script);
+      }
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Resources')
+      ).toBe(false);
+    });
+
     it('does not flag 10 or fewer external scripts', () => {
       appendExternalScripts(10);
       expect(

@@ -85,6 +85,14 @@ describe('analyzeSEO', () => {
       expect(analyzeSEO().issues.some((i) => i.type === 'Page Title')).toBe(false);
     });
 
+    it('trims surrounding whitespace before measuring title length', () => {
+      appendMeta({ name: 'description', content: GOOD_META });
+      document.title = `   ${'A'.repeat(10)}   `;
+      appendH1();
+
+      expect(analyzeSEO().issues.some((i) => i.type === 'Page Title')).toBe(false);
+    });
+
     it('does not flag a title of exactly 60 characters', () => {
       appendMeta({ name: 'description', content: GOOD_META });
       document.title = 'A'.repeat(60);
@@ -95,6 +103,13 @@ describe('analyzeSEO', () => {
 
   // ── Meta description ────────────────────────────────────────────────────────
   describe('meta description', () => {
+    it('treats a whitespace-only description as missing', () => {
+      appendMeta({ name: 'description', content: '   ' });
+      document.title = GOOD_TITLE;
+      appendH1();
+
+      expect(analyzeSEO().issues.some((i) => i.type === 'Meta Description')).toBe(true);
+    });
     it('deducts 20 points for a missing meta description', () => {
       document.title = GOOD_TITLE;
       appendH1();

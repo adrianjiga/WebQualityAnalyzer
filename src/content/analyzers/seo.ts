@@ -10,8 +10,8 @@ export function analyzeSEO(
   let score = 100;
 
   // Check for page title
-  const title = document.title;
-  if (!title || title.trim() === '') {
+  const title = document.title.trim();
+  if (!title) {
     issues.push({
       type: 'Page Title',
       message: 'Page has no title',
@@ -39,7 +39,7 @@ export function analyzeSEO(
 
   // Check for meta description
   const metaDescription = document.querySelector('meta[name="description"]');
-  if (!metaDescription || !metaDescription.getAttribute('content')) {
+  if (!metaDescription || !metaDescription.getAttribute('content')?.trim()) {
     issues.push({
       type: 'Meta Description',
       message: 'Missing meta description',
@@ -48,7 +48,7 @@ export function analyzeSEO(
     suggestions.push('Add a meta description (150-160 characters recommended)');
     score -= settings.noMetaDescDeduction;
   } else {
-    const content = metaDescription.getAttribute('content') || '';
+    const content = metaDescription.getAttribute('content')?.trim() || '';
     if (content.length < settings.metaDescMinLength) {
       issues.push({
         type: 'Meta Description',

@@ -49,9 +49,24 @@ export function analyzePerformance(
   }
 
   // Check for external resources
-  const externalScripts = document.querySelectorAll('script[src^="http"]');
-  const externalStyles = document.querySelectorAll('link[href^="http"]');
-  const totalExternal = externalScripts.length + externalStyles.length;
+  const externalResources = new Set<string>();
+  document.querySelectorAll('script[src], link[rel~="stylesheet"][href]').forEach((resource) => {
+    const attribute = resource.tagName.toLowerCase() === 'script' ? 'src' : 'href';
+    const rawUrl = resource.getAttribute(attribute);
+    if (!rawUrl) return;
+    try {
+      const url = new URL(rawUrl, window.location.href);
+      if (
+        (url.protocol === 'http:' || url.protocol === 'https:') &&
+        url.origin !== window.location.origin
+      ) {
+        externalResources.add(url.href);
+      }
+    } catch {
+      // Ignore invalid resource URLs.
+    }
+  });
+  const totalExternal = externalResources.size;
 
   if (totalExternal > settings.externalResourcesThreshold) {
     issues.push({
