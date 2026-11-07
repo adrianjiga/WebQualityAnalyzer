@@ -103,22 +103,63 @@ export async function runAnalysis(): Promise<void> {
 
       // Send message to content script
       const settings = await loadSettings();
-      const response = await browser.tabs.sendMessage(tab.id, {
+      const rawResponse: unknown = await browser.tabs.sendMessage(tab.id, {
         action: 'analyze',
         settings,
-      }) as AnalysisResult;
+      });
+      if (!isAnalysisResult(rawResponse)) {
+        throw new Error('The page returned an invalid analysis response.');
+      }
+      const response = rawResponse;
       currentAnalysis = response;
       displayResults(response);
       exportButton.disabled = false;
     } else {
       throw new Error('The active tab is unavailable.');
     }
-  } catch (_error) {
-    showError("Could not analyze page. Make sure you're on a valid webpage.");
+  } catch (error) {
+    showError(
+      error instanceof Error && error.message === 'The page returned an invalid analysis response.'
+        ? 'The analysis response was invalid. Reload the extension and try again.'
+        : "Could not analyze page. Make sure you're on a valid webpage."
+    );
   } finally {
     analyzeButton.disabled = false;
     analyzeButton.textContent = 'Analyze Page';
   }
+}
+
+function isAnalysisResult(value: unknown): value is AnalysisResult {
+  if (!isRecord(value) || !isRecord(value.pageInfo) || !isRecord(value.categories)) {
+    return false;
+  }
+  const categories = value.categories;
+  if (
+    typeof value.score !== 'number' || !Number.isFinite(value.score) ||
+    typeof value.pageInfo.url !== 'string' ||
+    typeof value.pageInfo.title !== 'string' ||
+    typeof value.pageInfo.timestamp !== 'string'
+  ) return false;
+
+  return (['accessibility', 'seo', 'performance'] as const).every((name) => {
+    const category = categories[name];
+    return isRecord(category) &&
+      typeof category.score === 'number' && Number.isFinite(category.score) &&
+      Array.isArray(category.issues) &&
+      category.issues.every((issue: unknown) =>
+        isRecord(issue) && typeof issue.type === 'string' &&
+        typeof issue.message === 'string' &&
+        ['high', 'medium', 'low'].includes(issue.severity as string) &&
+        (issue.selector === undefined || typeof issue.selector === 'string') &&
+        (issue.htmlSnippet === undefined || typeof issue.htmlSnippet === 'string')
+      ) &&
+      Array.isArray(category.suggestions) &&
+      category.suggestions.every((suggestion: unknown) => typeof suggestion === 'string');
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function switchTab(tabName: string): void {

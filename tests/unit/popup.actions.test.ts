@@ -209,6 +209,20 @@ describe('runAnalysis', () => {
     );
   });
 
+  it('shows a compatibility error for a malformed analysis response', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 1, url: 'https://example.com' },
+    ]);
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce({ score: 'bad' });
+
+    await runAnalysis();
+
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'analysis response was invalid'
+    );
+    expect(document.getElementById('export-btn')?.hasAttribute('disabled')).toBe(true);
+  });
+
   it('does not retain or export a previous result after a later failure', async () => {
     (chrome.tabs.query as jest.Mock)
       .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
