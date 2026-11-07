@@ -144,9 +144,7 @@ npm run test:watch                         # watch mode
 npx jest tests/unit/content.core.test.ts  # single file
 ```
 
-Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**.
-Baseline as of 2026-08: 95.83% stmts / 89.24% branches / 83.78% funcs / 96.14% lines.
-The threshold is the contract — the baseline is a dated snapshot and will drift; `jest.config.ts` is the source of truth.
+Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**. Run `npm test -- --coverage` to see current coverage; `jest.config.ts` is the source of truth for the enforced thresholds.
 
 ## Architecture
 
