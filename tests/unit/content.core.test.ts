@@ -24,7 +24,7 @@ beforeEach(() => {
 // performQualityAnalysis
 // ══════════════════════════════════════════════════════════════════════════════
 describe('performQualityAnalysis', () => {
-  it('overall score equals the rounded average of the three category scores', () => {
+  it('overall score equals the rounded average of the enabled category scores', () => {
     const meta = document.createElement('meta');
     meta.setAttribute('name', 'description');
     meta.setAttribute('content', 'A'.repeat(130));
@@ -277,5 +277,15 @@ describe('performQualityAnalysis with settings', () => {
       performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
     });
     expect(result.score).toBe(100);
+  });
+
+  it('excludes disabled categories from the overall score', () => {
+    const result = performQualityAnalysis({
+      accessibility: { ...DEFAULT_SETTINGS.accessibility, enabled: false },
+      seo: { ...DEFAULT_SETTINGS.seo, enabled: true },
+      performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
+    });
+
+    expect(result.score).toBe(result.categories.seo.score);
   });
 });

@@ -39,8 +39,7 @@ describe('analyzePage', () => {
       performance: { enabled: false },
     });
 
-    // A disabled category scores 100 ("nothing found wrong"), so the overall average is not
-    // dragged down by a category the caller deliberately switched off.
+    // Disabled categories are shown as 100 but excluded from the overall average.
     expect(result.categories.seo.issues).toEqual([]);
     expect(result.categories.seo.score).toBe(100);
     expect(result.categories.performance.score).toBe(100);

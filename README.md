@@ -21,7 +21,7 @@ The analyzers are pure DOM logic with no extension coupling, which is what makes
 - **Accessibility** — detects missing alt text, unlabelled form inputs, and broken heading hierarchy
 - **SEO** — checks page title length, meta description, H1 presence, canonical URL, and Open Graph tags
 - **Performance** — flags oversized images, missing lazy-loading, excessive external resources, and inline styles
-- **Overall score** — 0–100 weighted average across all three categories
+- **Overall score** — 0–100 average across enabled categories
 - **Expandable issue panels** — each issue expands to show the CSS selector and HTML snippet of the offending element
 - **Perfect Score** — each category shows a "Perfect Score!" banner when it passes all checks with no suggestions
 - **Settings tab** — configure each analyzer: toggle on/off and adjust all scoring thresholds; settings persist via `browser.storage.local`
@@ -125,7 +125,7 @@ const strict = WebQualityAnalyzer.analyzePage({
 });
 ```
 
-A **disabled category scores 100, not 0** — "nothing found wrong", not "perfect". Averaging a 0 for a category the caller switched off would misreport the page.
+A **disabled category is reported with a score of 100 and no issues**, but is excluded from the overall average so turning off checks cannot increase the score. If all categories are disabled, the overall score is 100 because no checks ran; use the category enabled flags to distinguish that result from a fully audited page.
 
 ### Why the bundle is committed
 
