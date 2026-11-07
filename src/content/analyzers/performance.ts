@@ -14,6 +14,9 @@ export function analyzePerformance(
   const largeImages = Array.from(images).filter((img) => {
     return img.naturalWidth > settings.imageMaxWidth || img.naturalHeight > settings.imageMaxHeight;
   });
+  const imagesWithUnknownDimensions = Array.from(images).filter(
+    (img) => img.naturalWidth === 0 || img.naturalHeight === 0
+  );
   if (largeImages.length > 0) {
     const firstLarge = largeImages[0];
     issues.push({
@@ -25,6 +28,12 @@ export function analyzePerformance(
     });
     suggestions.push('Optimize large images and use appropriate formats (WebP, AVIF)');
     score -= Math.min(20, largeImages.length * 3);
+  }
+
+  if (imagesWithUnknownDimensions.length > 0) {
+    suggestions.push(
+      `${imagesWithUnknownDimensions.length} images could not be checked for intrinsic dimensions; verify they load successfully and inspect their source sizes`
+    );
   }
 
   // Check for images without loading attribute
@@ -40,9 +49,24 @@ export function analyzePerformance(
   }
 
   // Check for external resources
-  const externalScripts = document.querySelectorAll('script[src^="http"]');
-  const externalStyles = document.querySelectorAll('link[href^="http"]');
-  const totalExternal = externalScripts.length + externalStyles.length;
+  const externalResources = new Set<string>();
+  document.querySelectorAll('script[src], link[rel~="stylesheet"][href]').forEach((resource) => {
+    const attribute = resource.tagName.toLowerCase() === 'script' ? 'src' : 'href';
+    const rawUrl = resource.getAttribute(attribute);
+    if (!rawUrl) return;
+    try {
+      const url = new URL(rawUrl, window.location.href);
+      if (
+        (url.protocol === 'http:' || url.protocol === 'https:') &&
+        url.origin !== window.location.origin
+      ) {
+        externalResources.add(url.href);
+      }
+    } catch {
+      // Ignore invalid resource URLs.
+    }
+  });
+  const totalExternal = externalResources.size;
 
   if (totalExternal > settings.externalResourcesThreshold) {
     issues.push({
@@ -51,7 +75,11 @@ export function analyzePerformance(
       severity: 'medium'
     });
     suggestions.push('Consider bundling or reducing external resources to improve load times');
-    score -= Math.min(15, (totalExternal - settings.externalResourcesThreshold) * 2); // TODO: expose cap (15) and per-resource deduction (2) as settings
+    score -= Math.min(
+      settings.externalResourcesDeductionCap,
+      (totalExternal - settings.externalResourcesThreshold) *
+        settings.externalResourcesDeductionPerResource
+    );
   }
 
   // Check for inline styles
@@ -67,12 +95,22 @@ export function analyzePerformance(
   }
 
   // Check for external links without proper attributes
-  const externalLinks = Array.from(
-    document.querySelectorAll('a[href^="http"]')
-  ).filter((link) => {
-    const href = link.getAttribute('href');
-    return href && !href.includes(window.location.hostname);
-  });
+  const externalLinks = Array.from(document.querySelectorAll('a[href]')).filter(
+    (link) => {
+      const href = link.getAttribute('href');
+      if (!href) return false;
+
+      try {
+        const target = new URL(href, window.location.href);
+        return (
+          (target.protocol === 'http:' || target.protocol === 'https:') &&
+          target.hostname !== window.location.hostname
+        );
+      } catch {
+        return false;
+      }
+    }
+  );
   const externalLinksWithoutRel = externalLinks.filter(
     (link) => !link.getAttribute('rel')
   );

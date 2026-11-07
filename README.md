@@ -21,7 +21,7 @@ The analyzers are pure DOM logic with no extension coupling, which is what makes
 - **Accessibility** — detects missing alt text, unlabelled form inputs, and broken heading hierarchy
 - **SEO** — checks page title length, meta description, H1 presence, canonical URL, and Open Graph tags
 - **Performance** — flags oversized images, missing lazy-loading, excessive external resources, and inline styles
-- **Overall score** — 0–100 weighted average across all three categories
+- **Overall score** — 0–100 average across enabled categories
 - **Expandable issue panels** — each issue expands to show the CSS selector and HTML snippet of the offending element
 - **Perfect Score** — each category shows a "Perfect Score!" banner when it passes all checks with no suggestions
 - **Settings tab** — configure each analyzer: toggle on/off and adjust all scoring thresholds; settings persist via `browser.storage.local`
@@ -33,7 +33,7 @@ The analyzers are pure DOM logic with no extension coupling, which is what makes
 
 ```bash
 npm install           # install dependencies
-npm run build         # all three bundles: Chrome, Firefox, and the library
+npm run build         # Chrome, Firefox, browser-global and ESM library bundles, and types
 npm run build:chrome  # Chrome extension only     → dist/chrome/
 npm run build:firefox # Firefox extension only    → dist/firefox/
 npm run build:lib     # injectable library only   → dist/lib/ (bundle + .d.ts)
@@ -42,6 +42,8 @@ npm run dev:firefox   # watch mode (Firefox)
 npm run lint          # ESLint
 npm test              # Jest test suite (with coverage)
 ```
+
+For manual Chrome and Firefox extension checks, use [BROWSER_SMOKE_TEST.md](BROWSER_SMOKE_TEST.md). CI also validates the built manifests and expected extension/package outputs.
 
 > **After changing anything under `src/content/analyzers/`, `src/content/analyze.ts`, `src/content/utils.ts`, `src/shared/settings.ts`, or `src/index.ts`, run `npm run build:lib` and commit the result.** `dist/lib/` is committed (see [Use as a library](#use-as-a-library)) and CI fails if it is stale.
 
@@ -65,9 +67,10 @@ npm test              # Jest test suite (with coverage)
 
 The analyzers touch nothing but `document` and `window.location` — no `browser.*`, no `chrome.*`, no extension lifecycle. The extension is one consumer of them, not their owner, so anything with a live page can run the same audit.
 
-`npm run build:lib` produces two things in `dist/lib/`:
+`npm run build:lib` produces the browser IIFE, an ESM module entry for package imports, and TypeScript declarations in `dist/lib/`:
 
 - `wqa.js` — a self-contained IIFE that assigns `globalThis.WebQualityAnalyzer`
+- `wqa.mjs` — an ES module with named exports matching the declarations and package root entry
 - `*.d.ts` — type declarations, so a TypeScript consumer can type the result without depending on the bundle at runtime
 
 ### Install
@@ -77,6 +80,16 @@ npm i -D github:adrianjiga/WebQualityAnalyzer
 ```
 
 The bundle is **committed to the repository**, so a git dependency works with no build step on install.
+
+In a browser environment with a live DOM, the package root provides named ESM exports:
+
+```js
+import { analyzePage } from 'webqualityanalyzer';
+
+const result = analyzePage();
+```
+
+For script injection without module loading, use the `webqualityanalyzer/wqa.js` IIFE entry shown below.
 
 ### Playwright
 
@@ -125,7 +138,7 @@ const strict = WebQualityAnalyzer.analyzePage({
 });
 ```
 
-A **disabled category scores 100, not 0** — "nothing found wrong", not "perfect". Averaging a 0 for a category the caller switched off would misreport the page.
+A **disabled category is reported with a score of 100 and no issues**, but is excluded from the overall average so turning off checks cannot increase the score. If all categories are disabled, the overall score is 100 because no checks ran; use the category enabled flags to distinguish that result from a fully audited page.
 
 ### Why the bundle is committed
 
@@ -143,9 +156,7 @@ npm run test:watch                         # watch mode
 npx jest tests/unit/content.core.test.ts  # single file
 ```
 
-Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**.
-Baseline as of 2026-08: 95.83% stmts / 89.24% branches / 83.78% funcs / 96.14% lines.
-The threshold is the contract — the baseline is a dated snapshot and will drift; `jest.config.ts` is the source of truth.
+Coverage thresholds (all enforced): **80% statements, branches, functions, and lines**. Run `npm test -- --coverage` to see current coverage; `jest.config.ts` is the source of truth for the enforced thresholds.
 
 ## Architecture
 
@@ -176,11 +187,13 @@ Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are defined in `src/c
 
 Webpack selects the correct manifest via `--env browser=chrome|firefox` and writes the build to `dist/chrome/` or `dist/firefox/`.
 
+The extension requests `activeTab` for user-invoked access to the current tab and `storage` for analyzer settings. Its content script matches `<all_urls>` so it can analyze pages without a separate injection step; this grants broad site access and should be considered when installing the extension. The `tabs` permission is omitted because the extension only queries the active tab, and matching page permissions cover the tab metadata it reads for supported pages.
+
 ## CI
 
 | Workflow | Triggers | Steps |
 |----------|----------|-------|
-| CI | push (all branches), PR → main | lint, build, verify the committed library bundle is current |
+| CI | push (all branches), PR → main | lint, build, package consumer checks, extension output checks, verify committed library artifacts |
 | Tests | push (all branches), PR → main | Jest with coverage |
 
 The bundle check rebuilds `dist/lib/` and fails if anything differs from the commit — modified files *or* a newly emitted file that was never added — so a committed artifact can never silently drift from the source it was built from.

@@ -1,4 +1,5 @@
 import { analyzeSEO } from '../../src/content/analyzers/seo';
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 import { appendMeta, appendLink, appendH1 } from '../helpers/helpers';
 
 beforeEach(() => {
@@ -45,6 +46,16 @@ describe('analyzeSEO', () => {
       expect(result.score).toBe(75);
     });
 
+    it('uses the configured missing-title deduction', () => {
+      appendMeta({ name: 'description', content: GOOD_META });
+      appendH1();
+      const result = analyzeSEO({
+        ...DEFAULT_SETTINGS.seo,
+        noTitleDeduction: 7,
+      });
+      expect(result.score).toBe(93);
+    });
+
     it('deducts 15 points for a title shorter than 10 characters', () => {
       appendMeta({ name: 'description', content: GOOD_META });
       document.title = 'Short'; // 5 chars — set AFTER head manipulation
@@ -74,6 +85,14 @@ describe('analyzeSEO', () => {
       expect(analyzeSEO().issues.some((i) => i.type === 'Page Title')).toBe(false);
     });
 
+    it('trims surrounding whitespace before measuring title length', () => {
+      appendMeta({ name: 'description', content: GOOD_META });
+      document.title = `   ${'A'.repeat(10)}   `;
+      appendH1();
+
+      expect(analyzeSEO().issues.some((i) => i.type === 'Page Title')).toBe(false);
+    });
+
     it('does not flag a title of exactly 60 characters', () => {
       appendMeta({ name: 'description', content: GOOD_META });
       document.title = 'A'.repeat(60);
@@ -84,6 +103,13 @@ describe('analyzeSEO', () => {
 
   // ── Meta description ────────────────────────────────────────────────────────
   describe('meta description', () => {
+    it('treats a whitespace-only description as missing', () => {
+      appendMeta({ name: 'description', content: '   ' });
+      document.title = GOOD_TITLE;
+      appendH1();
+
+      expect(analyzeSEO().issues.some((i) => i.type === 'Meta Description')).toBe(true);
+    });
     it('deducts 20 points for a missing meta description', () => {
       document.title = GOOD_TITLE;
       appendH1();
@@ -245,7 +271,6 @@ describe('analyzeSEO', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // analyzeSEO — custom settings
 // ══════════════════════════════════════════════════════════════════════════════
-import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 
 describe('analyzeSEO with custom settings', () => {
   beforeEach(() => {

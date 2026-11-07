@@ -18,49 +18,49 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="overview">Overview</div>
-    <div class="tab" data-tab="accessibility">A11y</div>
-    <div class="tab" data-tab="seo">SEO</div>
-    <div class="tab" data-tab="performance">Perf</div>
-    <div class="tab" data-tab="settings">Settings</div>
+  <div class="tabs" role="tablist" aria-label="Analysis sections">
+    <button class="tab active" id="overview-tab-button" type="button" role="tab" aria-selected="true" aria-controls="overview-tab" tabindex="0" data-tab="overview">Overview</button>
+    <button class="tab" id="accessibility-tab-button" type="button" role="tab" aria-selected="false" aria-controls="accessibility-tab" tabindex="-1" data-tab="accessibility">A11y</button>
+    <button class="tab" id="seo-tab-button" type="button" role="tab" aria-selected="false" aria-controls="seo-tab" tabindex="-1" data-tab="seo">SEO</button>
+    <button class="tab" id="performance-tab-button" type="button" role="tab" aria-selected="false" aria-controls="performance-tab" tabindex="-1" data-tab="performance">Perf</button>
+    <button class="tab" id="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-tab" tabindex="-1" data-tab="settings">Settings</button>
   </div>
 
-  <div id="overview-tab" class="tab-content active">
+  <div id="overview-tab" class="tab-content active" role="tabpanel" aria-labelledby="overview-tab-button" tabindex="0">
     <div class="empty-state">
       Click "Analyze Page" to start quality analysis
     </div>
   </div>
 
-  <div id="accessibility-tab" class="tab-content">
+  <div id="accessibility-tab" class="tab-content" role="tabpanel" aria-labelledby="accessibility-tab-button" tabindex="0">
     <div class="empty-state">
       No accessibility data available
     </div>
   </div>
 
-  <div id="seo-tab" class="tab-content">
+  <div id="seo-tab" class="tab-content" role="tabpanel" aria-labelledby="seo-tab-button" tabindex="0">
     <div class="empty-state">
       No SEO data available
     </div>
   </div>
 
-  <div id="performance-tab" class="tab-content">
+  <div id="performance-tab" class="tab-content" role="tabpanel" aria-labelledby="performance-tab-button" tabindex="0">
     <div class="empty-state">
       No performance data available
     </div>
   </div>
 
-  <div id="settings-tab" class="tab-content">
+  <div id="settings-tab" class="tab-content" role="tabpanel" aria-labelledby="settings-tab-button" tabindex="0">
     <div class="settings-container">
 
       <details class="settings-section" open>
         <summary class="settings-section-header">
           <span class="settings-section-title">Accessibility</span>
-          <label class="settings-toggle" title="Enable accessibility analyzer">
-            <input type="checkbox" id="settings-a11y-enabled" aria-label="Enable accessibility analyzer">
-            <span class="settings-toggle-slider"></span>
-          </label>
         </summary>
+        <label class="settings-toggle" title="Enable accessibility analyzer">
+          <input type="checkbox" id="settings-a11y-enabled" aria-label="Enable accessibility analyzer">
+          <span class="settings-toggle-slider"></span>
+        </label>
         <div class="settings-section-body" id="settings-a11y-body">
           <div class="settings-field">
             <label for="settings-a11y-missingAltDeduction">Points per missing alt</label>
@@ -88,11 +88,11 @@
       <details class="settings-section">
         <summary class="settings-section-header">
           <span class="settings-section-title">SEO</span>
-          <label class="settings-toggle" title="Enable SEO analyzer">
-            <input type="checkbox" id="settings-seo-enabled" aria-label="Enable SEO analyzer">
-            <span class="settings-toggle-slider"></span>
-          </label>
         </summary>
+        <label class="settings-toggle" title="Enable SEO analyzer">
+          <input type="checkbox" id="settings-seo-enabled" aria-label="Enable SEO analyzer">
+          <span class="settings-toggle-slider"></span>
+        </label>
         <div class="settings-section-body" id="settings-seo-body">
           <div class="settings-field">
             <label for="settings-seo-titleMinLength">Title min length (chars)</label>
@@ -111,6 +111,14 @@
             <input type="number" id="settings-seo-metaDescMaxLength" min="1" max="500">
           </div>
           <div class="settings-field">
+            <label for="settings-seo-noTitleDeduction">Missing title deduction</label>
+            <input type="number" id="settings-seo-noTitleDeduction" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-seo-noMetaDescDeduction">Missing description deduction</label>
+            <input type="number" id="settings-seo-noMetaDescDeduction" min="0" max="100">
+          </div>
+          <div class="settings-field">
             <label for="settings-seo-noH1Deduction">No H1 deduction</label>
             <input type="number" id="settings-seo-noH1Deduction" min="0" max="50">
           </div>
@@ -124,11 +132,11 @@
       <details class="settings-section">
         <summary class="settings-section-header">
           <span class="settings-section-title">Performance</span>
-          <label class="settings-toggle" title="Enable performance analyzer">
-            <input type="checkbox" id="settings-perf-enabled" aria-label="Enable performance analyzer">
-            <span class="settings-toggle-slider"></span>
-          </label>
         </summary>
+        <label class="settings-toggle" title="Enable performance analyzer">
+          <input type="checkbox" id="settings-perf-enabled" aria-label="Enable performance analyzer">
+          <span class="settings-toggle-slider"></span>
+        </label>
         <div class="settings-section-body" id="settings-perf-body">
           <div class="settings-field">
             <label for="settings-perf-imageMaxWidth">Image max width (px)</label>
@@ -145,6 +153,14 @@
           <div class="settings-field">
             <label for="settings-perf-externalResourcesThreshold">External resources threshold</label>
             <input type="number" id="settings-perf-externalResourcesThreshold" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-externalResourcesDeductionPerResource">Points per extra resource</label>
+            <input type="number" id="settings-perf-externalResourcesDeductionPerResource" min="0" max="100">
+          </div>
+          <div class="settings-field">
+            <label for="settings-perf-externalResourcesDeductionCap">External resource deduction cap</label>
+            <input type="number" id="settings-perf-externalResourcesDeductionCap" min="0" max="100">
           </div>
           <div class="settings-field">
             <label for="settings-perf-inlineStylesThreshold">Inline styles threshold</label>

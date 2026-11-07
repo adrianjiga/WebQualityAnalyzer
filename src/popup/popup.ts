@@ -4,25 +4,48 @@ import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
 import { loadSettings, saveSettings, resetSettings } from './settings';
-import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
+import { AnalyzerSettings, DEFAULT_SETTINGS, SETTING_LIMITS } from '../shared/settings';
 
 
 let currentAnalysis: AnalysisResult | null = null;
+const settingsListenersAttached = new WeakSet<EventTarget>();
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initializePopup(): void {
   const analyzeButton = document.getElementById(
     'analyze-btn'
   ) as HTMLButtonElement;
   const exportButton = document.getElementById(
     'export-btn'
   ) as HTMLButtonElement;
+  if (!analyzeButton || !exportButton) return;
 
   // Tab functionality
   const tabs = document.querySelectorAll('.tab');
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const tabName = tab.getAttribute('data-tab');
-      switchTab(tabName!);
+      if (tabName) switchTab(tabName);
+    });
+    tab.addEventListener('keydown', (event) => {
+      const keyEvent = event as KeyboardEvent;
+      const tabList = Array.from(document.querySelectorAll<HTMLElement>('.tab'));
+      const currentIndex = tabList.indexOf(tab as HTMLElement);
+      const nextIndex = keyEvent.key === 'ArrowRight'
+        ? (currentIndex + 1) % tabList.length
+        : keyEvent.key === 'ArrowLeft'
+          ? (currentIndex - 1 + tabList.length) % tabList.length
+          : keyEvent.key === 'Home'
+            ? 0
+            : keyEvent.key === 'End'
+              ? tabList.length - 1
+              : -1;
+      if (nextIndex < 0) return;
+      keyEvent.preventDefault();
+      const nextTab = tabList[nextIndex];
+      const tabName = nextTab?.getAttribute('data-tab');
+      if (!nextTab || !tabName) return;
+      switchTab(tabName);
+      nextTab.focus();
     });
   });
 
@@ -40,7 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Settings
   initSettings();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePopup, { once: true });
+} else {
+  initializePopup();
+}
 
 export async function runAnalysis(): Promise<void> {
   const analyzeButton = document.getElementById(
@@ -50,9 +79,14 @@ export async function runAnalysis(): Promise<void> {
     'export-btn'
   ) as HTMLButtonElement;
 
+  currentAnalysis = null;
   analyzeButton.disabled = true;
   analyzeButton.textContent = 'Analyzing...';
   exportButton.disabled = true;
+  const pageInfo = document.getElementById('page-info') as HTMLDivElement;
+  const pageUrl = document.getElementById('page-url') as HTMLDivElement;
+  pageInfo.style.display = 'none';
+  pageUrl.textContent = '';
 
   // Show loading state
   showLoadingState();
@@ -69,26 +103,72 @@ export async function runAnalysis(): Promise<void> {
 
       // Send message to content script
       const settings = await loadSettings();
-      const response = await browser.tabs.sendMessage(tab.id, {
+      const rawResponse: unknown = await browser.tabs.sendMessage(tab.id, {
         action: 'analyze',
         settings,
-      }) as AnalysisResult;
+      });
+      if (!isAnalysisResult(rawResponse)) {
+        throw new Error('The page returned an invalid analysis response.');
+      }
+      const response = rawResponse;
       currentAnalysis = response;
       displayResults(response);
       exportButton.disabled = false;
+    } else {
+      throw new Error('The active tab is unavailable.');
     }
-  } catch (_error) {
-    showError("Could not analyze page. Make sure you're on a valid webpage.");
+  } catch (error) {
+    showError(
+      error instanceof Error && error.message === 'The page returned an invalid analysis response.'
+        ? 'The analysis response was invalid. Reload the extension and try again.'
+        : "Could not analyze page. Make sure you're on a valid webpage."
+    );
   } finally {
     analyzeButton.disabled = false;
     analyzeButton.textContent = 'Analyze Page';
   }
 }
 
+function isAnalysisResult(value: unknown): value is AnalysisResult {
+  if (!isRecord(value) || !isRecord(value.pageInfo) || !isRecord(value.categories)) {
+    return false;
+  }
+  const categories = value.categories;
+  if (
+    typeof value.score !== 'number' || !Number.isFinite(value.score) ||
+    typeof value.pageInfo.url !== 'string' ||
+    typeof value.pageInfo.title !== 'string' ||
+    typeof value.pageInfo.timestamp !== 'string'
+  ) return false;
+
+  return (['accessibility', 'seo', 'performance'] as const).every((name) => {
+    const category = categories[name];
+    return isRecord(category) &&
+      typeof category.score === 'number' && Number.isFinite(category.score) &&
+      Array.isArray(category.issues) &&
+      category.issues.every((issue: unknown) =>
+        isRecord(issue) && typeof issue.type === 'string' &&
+        typeof issue.message === 'string' &&
+        ['high', 'medium', 'low'].includes(issue.severity as string) &&
+        (issue.selector === undefined || typeof issue.selector === 'string') &&
+        (issue.htmlSnippet === undefined || typeof issue.htmlSnippet === 'string')
+      ) &&
+      Array.isArray(category.suggestions) &&
+      category.suggestions.every((suggestion: unknown) => typeof suggestion === 'string');
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function switchTab(tabName: string): void {
   // Update tab buttons
   document.querySelectorAll('.tab').forEach((tab) => {
-    tab.classList.remove('active');
+    const selected = tab.getAttribute('data-tab') === tabName;
+    tab.classList.toggle('active', selected);
+    tab.setAttribute('aria-selected', String(selected));
+    (tab as HTMLElement).tabIndex = selected ? 0 : -1;
   });
   document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
 
@@ -240,6 +320,8 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
   set('settings-seo-titleMaxLength', String(settings.seo.titleMaxLength));
   set('settings-seo-metaDescMinLength', String(settings.seo.metaDescMinLength));
   set('settings-seo-metaDescMaxLength', String(settings.seo.metaDescMaxLength));
+  set('settings-seo-noTitleDeduction', String(settings.seo.noTitleDeduction));
+  set('settings-seo-noMetaDescDeduction', String(settings.seo.noMetaDescDeduction));
   set('settings-seo-noH1Deduction', String(settings.seo.noH1Deduction));
   set('settings-seo-multipleH1Deduction', String(settings.seo.multipleH1Deduction));
 
@@ -249,6 +331,8 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
   set('settings-perf-imageMaxHeight', String(settings.performance.imageMaxHeight));
   set('settings-perf-lazyLoadThreshold', String(settings.performance.lazyLoadThreshold));
   set('settings-perf-externalResourcesThreshold', String(settings.performance.externalResourcesThreshold));
+  set('settings-perf-externalResourcesDeductionPerResource', String(settings.performance.externalResourcesDeductionPerResource));
+  set('settings-perf-externalResourcesDeductionCap', String(settings.performance.externalResourcesDeductionCap));
   set('settings-perf-inlineStylesThreshold', String(settings.performance.inlineStylesThreshold));
   set('settings-perf-externalLinksDeductionCap', String(settings.performance.externalLinksDeductionCap));
 
@@ -260,8 +344,12 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
 
 export function collectSettings(): AnalyzerSettings {
   const num = (id: string, fallback: number): number => {
-    const val = parseInt((document.getElementById(id) as HTMLInputElement).value, 10);
-    return Number.isNaN(val) ? fallback : val;
+    const input = document.getElementById(id) as HTMLInputElement;
+    const val = Number(input.value);
+    if (!Number.isFinite(val) || input.value.trim() === '') return fallback;
+    const min = input.min === '' ? Number.NEGATIVE_INFINITY : Number(input.min);
+    const max = input.max === '' ? Number.POSITIVE_INFINITY : Number(input.max);
+    return Math.min(max, Math.max(min, Math.trunc(val)));
   };
   const bool = (id: string): boolean =>
     (document.getElementById(id) as HTMLInputElement).checked;
@@ -282,6 +370,8 @@ export function collectSettings(): AnalyzerSettings {
       titleMaxLength: num('settings-seo-titleMaxLength', d.seo.titleMaxLength),
       metaDescMinLength: num('settings-seo-metaDescMinLength', d.seo.metaDescMinLength),
       metaDescMaxLength: num('settings-seo-metaDescMaxLength', d.seo.metaDescMaxLength),
+      noTitleDeduction: num('settings-seo-noTitleDeduction', d.seo.noTitleDeduction),
+      noMetaDescDeduction: num('settings-seo-noMetaDescDeduction', d.seo.noMetaDescDeduction),
       noH1Deduction: num('settings-seo-noH1Deduction', d.seo.noH1Deduction),
       multipleH1Deduction: num('settings-seo-multipleH1Deduction', d.seo.multipleH1Deduction),
     },
@@ -291,6 +381,8 @@ export function collectSettings(): AnalyzerSettings {
       imageMaxHeight: num('settings-perf-imageMaxHeight', d.performance.imageMaxHeight),
       lazyLoadThreshold: num('settings-perf-lazyLoadThreshold', d.performance.lazyLoadThreshold),
       externalResourcesThreshold: num('settings-perf-externalResourcesThreshold', d.performance.externalResourcesThreshold),
+      externalResourcesDeductionPerResource: num('settings-perf-externalResourcesDeductionPerResource', d.performance.externalResourcesDeductionPerResource),
+      externalResourcesDeductionCap: num('settings-perf-externalResourcesDeductionCap', d.performance.externalResourcesDeductionCap),
       inlineStylesThreshold: num('settings-perf-inlineStylesThreshold', d.performance.inlineStylesThreshold),
       externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap', d.performance.externalLinksDeductionCap),
     },
@@ -299,17 +391,37 @@ export function collectSettings(): AnalyzerSettings {
 }
 
 function sanitizeSettings(settings: AnalyzerSettings): AnalyzerSettings {
+  for (const categoryName of Object.keys(SETTING_LIMITS) as Array<keyof AnalyzerSettings>) {
+    const category = settings[categoryName] as unknown as Record<string, unknown>;
+    const limits = SETTING_LIMITS[categoryName] as Record<string, readonly [number, number]>;
+    for (const [key, [min, max]] of Object.entries(limits)) {
+      const value = category[key];
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        category[key] = Math.min(max, Math.max(min, value));
+      }
+    }
+  }
   if (settings.seo.titleMaxLength <= settings.seo.titleMinLength) {
-    settings.seo.titleMaxLength = settings.seo.titleMinLength + 1;
+    settings.seo.titleMaxLength = Math.min(200, settings.seo.titleMinLength + 1);
+    settings.seo.titleMinLength = Math.min(settings.seo.titleMinLength, settings.seo.titleMaxLength - 1);
   }
   if (settings.seo.metaDescMaxLength <= settings.seo.metaDescMinLength) {
-    settings.seo.metaDescMaxLength = settings.seo.metaDescMinLength + 1;
+    settings.seo.metaDescMaxLength = Math.min(500, settings.seo.metaDescMinLength + 1);
+    settings.seo.metaDescMinLength = Math.min(settings.seo.metaDescMinLength, settings.seo.metaDescMaxLength - 1);
   }
   return settings;
 }
 
 function updateSectionDisabledState(bodyId: string, enabled: boolean): void {
-  document.getElementById(bodyId)?.classList.toggle('disabled', !enabled);
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  body.classList.toggle('disabled', !enabled);
+  body.setAttribute('aria-disabled', String(!enabled));
+  body.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+    'input, select, textarea'
+  ).forEach((control) => {
+    control.disabled = !enabled;
+  });
 }
 
 export function attachSettingsListeners(): void {
@@ -321,7 +433,8 @@ export function attachSettingsListeners(): void {
 
   toggleConfigs.forEach(({ toggleId, bodyId }) => {
     const toggle = document.getElementById(toggleId) as HTMLInputElement;
-    if (!toggle) return;
+    if (!toggle || settingsListenersAttached.has(toggle)) return;
+    settingsListenersAttached.add(toggle);
     // Prevent the toggle click from also toggling the parent <details>
     toggle.addEventListener('click', (e) => e.stopPropagation());
     toggle.addEventListener('change', () => {
@@ -332,16 +445,22 @@ export function attachSettingsListeners(): void {
 
   // Auto-save all number inputs on change
   document.querySelectorAll('#settings-tab input[type="number"]').forEach((input) => {
+    if (settingsListenersAttached.has(input)) return;
+    settingsListenersAttached.add(input);
     input.addEventListener('change', () => {
       saveSettings(collectSettings()).catch(console.error);
     });
   });
 
   // Reset button
-  document.getElementById('settings-reset-btn')?.addEventListener('click', async () => {
+  const resetButton = document.getElementById('settings-reset-btn');
+  if (resetButton && !settingsListenersAttached.has(resetButton)) {
+    settingsListenersAttached.add(resetButton);
+    resetButton.addEventListener('click', async () => {
     const defaults = await resetSettings();
     populateSettingsUI(defaults);
-  });
+    });
+  }
 }
 
 export function displayCategoryContent(

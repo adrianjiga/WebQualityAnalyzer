@@ -3,7 +3,7 @@ import { getCssSelector, getHtmlSnippet } from '../../src/content/utils';
 
 // ─── Message-listener capture ─────────────────────────────────────────────────
 type MessageListener = (
-  request: { action: string },
+  request: unknown,
   sender: chrome.runtime.MessageSender
 ) => Promise<unknown> | undefined;
 
@@ -24,7 +24,7 @@ beforeEach(() => {
 // performQualityAnalysis
 // ══════════════════════════════════════════════════════════════════════════════
 describe('performQualityAnalysis', () => {
-  it('overall score equals the rounded average of the three category scores', () => {
+  it('overall score equals the rounded average of the enabled category scores', () => {
     const meta = document.createElement('meta');
     meta.setAttribute('name', 'description');
     meta.setAttribute('content', 'A'.repeat(130));
@@ -111,6 +111,28 @@ describe('Chrome message listener', () => {
       {} as chrome.runtime.MessageSender
     );
     expect(result).toBeUndefined();
+  });
+
+  it.each([null, undefined, 'analyze', 12, [], {}])(
+    'ignores malformed message payload %p',
+    (request) => {
+      expect(() =>
+        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
+      ).not.toThrow();
+      expect(
+        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
+      ).toBeUndefined();
+    }
+  );
+
+  it('falls back to defaults when an analyze message has malformed settings', async () => {
+    const result = capturedMessageListener(
+      { action: 'analyze', settings: { accessibility: null } },
+      {} as chrome.runtime.MessageSender
+    );
+
+    expect(result).toBeInstanceOf(Promise);
+    await expect(result).resolves.toHaveProperty('categories');
   });
 });
 
@@ -255,5 +277,15 @@ describe('performQualityAnalysis with settings', () => {
       performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
     });
     expect(result.score).toBe(100);
+  });
+
+  it('excludes disabled categories from the overall score', () => {
+    const result = performQualityAnalysis({
+      accessibility: { ...DEFAULT_SETTINGS.accessibility, enabled: false },
+      seo: { ...DEFAULT_SETTINGS.seo, enabled: true },
+      performance: { ...DEFAULT_SETTINGS.performance, enabled: false },
+    });
+
+    expect(result.score).toBe(result.categories.seo.score);
   });
 });

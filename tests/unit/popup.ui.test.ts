@@ -3,9 +3,24 @@ import {
   updatePageInfo,
   showLoadingState,
   showError,
+  initializePopup,
 } from '../../src/popup/popup';
 
 import { setupPopupDOM } from '../helpers/popup';
+
+describe('initializePopup', () => {
+  it('initializes popup controls when the document is already available', () => {
+    setupPopupDOM();
+    initializePopup();
+
+    document.querySelector('[data-tab="seo"]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+
+    expect(document.querySelector('[data-tab="seo"]')?.classList.contains('active')).toBe(true);
+    expect(document.getElementById('seo-tab')?.classList.contains('active')).toBe(true);
+  });
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // switchTab
@@ -60,6 +75,26 @@ describe('switchTab', () => {
     switchTab('settings');
     expect(document.getElementById('settings-tab')?.classList.contains('active')).toBe(true);
     expect(document.querySelector('[data-tab="settings"]')?.classList.contains('active')).toBe(true);
+  });
+
+  it('updates ARIA selection and roving tabindex when switching tabs', () => {
+    switchTab('seo');
+    const seoTab = document.querySelector('[data-tab="seo"]');
+    const overviewTab = document.querySelector('[data-tab="overview"]');
+
+    expect(seoTab?.getAttribute('aria-selected')).toBe('true');
+    expect((seoTab as HTMLButtonElement).tabIndex).toBe(0);
+    expect(overviewTab?.getAttribute('aria-selected')).toBe('false');
+    expect((overviewTab as HTMLButtonElement).tabIndex).toBe(-1);
+  });
+
+  it('supports arrow-key navigation between tabs', () => {
+    setupPopupDOM();
+    initializePopup();
+    const overviewTab = document.querySelector('[data-tab="overview"]') as HTMLButtonElement;
+    overviewTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+
+    expect(document.querySelector('[data-tab="accessibility"]')?.classList.contains('active')).toBe(true);
   });
 
   it('shows only one active panel after switching to settings', () => {

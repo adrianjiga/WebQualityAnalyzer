@@ -15,7 +15,8 @@ export function analyzeAccessibility(
   // Check for missing alt text on images
   const images = document.querySelectorAll('img');
   const imagesWithoutAlt = Array.from(images).filter(
-    (img) => !img.alt || img.alt.trim() === ''
+    (img) =>
+      !img.hasAttribute('alt') || (img.alt.length > 0 && img.alt.trim() === '')
   );
   if (imagesWithoutAlt.length > 0) {
     const firstImg = imagesWithoutAlt[0];
@@ -32,13 +33,22 @@ export function analyzeAccessibility(
 
   // Check for form labels
   const inputs = document.querySelectorAll(
-    'input[type="text"], input[type="email"], input[type="password"], textarea, select'
+    'input:not([type="hidden"]), textarea, select'
   );
   const inputsWithoutLabels = Array.from(inputs).filter((input) => {
-    const id = input.getAttribute('id');
-    const ariaLabel = input.getAttribute('aria-label');
-    const label = id ? document.querySelector(`label[for="${id}"]`) : null;
-    return !label && !ariaLabel;
+    const ariaLabel = input.getAttribute('aria-label')?.trim();
+    const labelledBy = input
+      .getAttribute('aria-labelledby')
+      ?.trim()
+      .split(/\s+/)
+      .some((id) => {
+        const label = document.getElementById(id);
+        return Boolean(label?.textContent?.trim());
+      });
+    const hasAssociatedLabel = Array.from(
+      document.getElementsByTagName('label')
+    ).some((label) => label.htmlFor === input.id || label.contains(input));
+    return !hasAssociatedLabel && !ariaLabel && !labelledBy;
   });
   if (inputsWithoutLabels.length > 0) {
     const firstInput = inputsWithoutLabels[0] as Element;
@@ -56,7 +66,9 @@ export function analyzeAccessibility(
   // Check for color contrast (basic check)
   const elementsWithColor = document.querySelectorAll('[style*="color"]');
   if (elementsWithColor.length > 0) {
-    suggestions.push('Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)');
+    suggestions.push(
+      'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
+    );
   }
 
   // Check for focus indicators
@@ -68,14 +80,14 @@ export function analyzeAccessibility(
   const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
   if (headings.length > 0) {
     const headingLevels = Array.from(headings).map(h => parseInt(h.tagName.charAt(1)));
-    let previousLevel = 0;
+    let previousLevel = headingLevels[0] ?? 0;
     let hasSkippedLevel = false;
     let firstSkippedHeading: Element | null = null;
 
-    headingLevels.forEach((level, i) => {
+    headingLevels.slice(1).forEach((level, offset) => {
       if (level > previousLevel + 1 && !firstSkippedHeading) {
         hasSkippedLevel = true;
-        firstSkippedHeading = headings[i];
+        firstSkippedHeading = headings[offset + 1] ?? null;
       }
       previousLevel = level;
     });

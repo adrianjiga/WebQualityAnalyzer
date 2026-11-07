@@ -76,6 +76,22 @@ describe('populateSettingsUI', () => {
     expect(document.getElementById('settings-seo-body')?.classList.contains('disabled')).toBe(true);
   });
 
+  it('disables section inputs semantically when analyzer is disabled', () => {
+    populateSettingsUI({ ...DEFAULT_SETTINGS, seo: { ...DEFAULT_SETTINGS.seo, enabled: false } });
+    const input = document.getElementById('settings-seo-titleMinLength') as HTMLInputElement;
+
+    expect(input.disabled).toBe(true);
+    expect(document.getElementById('settings-seo-body')?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('enables section inputs semantically when analyzer is enabled', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    const input = document.getElementById('settings-seo-titleMinLength') as HTMLInputElement;
+
+    expect(input.disabled).toBe(false);
+    expect(document.getElementById('settings-seo-body')?.getAttribute('aria-disabled')).toBe('false');
+  });
+
   it('removes .disabled class from section body when analyzer is enabled', () => {
     const body = document.getElementById('settings-a11y-body')!;
     body.classList.add('disabled');
@@ -130,6 +146,17 @@ describe('collectSettings', () => {
     const result = collectSettings();
     expect(result.seo.metaDescMaxLength).toBe(201);
   });
+
+  it('clamps numeric input values to their declared bounds', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    (document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement).value = '-9';
+    (document.getElementById('settings-perf-imageMaxWidth') as HTMLInputElement).value = '20000';
+
+    const result = collectSettings();
+
+    expect(result.accessibility.missingAltDeduction).toBe(0);
+    expect(result.performance.imageMaxWidth).toBe(9999);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -148,6 +175,15 @@ describe('attachSettingsListeners', () => {
     expect(storageSet).toHaveBeenCalledWith(
       expect.objectContaining({ analyzerSettings: expect.any(Object) })
     );
+  });
+
+  it('does not attach duplicate save listeners when initialized repeatedly', () => {
+    attachSettingsListeners();
+    const input = document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement;
+    input.value = '7';
+    input.dispatchEvent(new Event('change'));
+
+    expect(storageSet).toHaveBeenCalledTimes(1);
   });
 
   it('toggles .disabled on a11y body when a11y toggle changes', () => {

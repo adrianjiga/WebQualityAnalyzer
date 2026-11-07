@@ -35,7 +35,7 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 | ------------------------------ | ---------------------- | ------------------------------------------------------------ |
 | `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events                                   |
 | `src/content/content.ts`       | `content.bundle.js`    | Content script — registers the message listener, delegates to `analyze.ts` |
-| `src/index.ts`                 | `dist/lib/wqa.js`      | **Library entry** — same analyzers, no extension dependency  |
+| `src/index.ts`                 | `dist/lib/wqa.js`, `dist/lib/wqa.mjs` | Library IIFE global and named-export ESM entries |
 | `src/popup/popup.ts`           | `popup.bundle.js`      | Popup UI — sends messages to content script, renders results |
 | `src/shared/browser.ts`        | (extension bundles)    | Re-exports `webextension-polyfill` as `browser.*`. **Not in the library bundle** |
 | `src/shared/settings.ts`       | (imported by all)      | `AnalyzerSettings` interfaces, `DEFAULT_SETTINGS`, `STORAGE_KEY` |
@@ -66,19 +66,19 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 `src/shared/` is imported by both the popup and content bundles:
 
 - `browser.ts` — re-exports `webextension-polyfill` as `browser.*`
-- `settings.ts` — `AnalyzerSettings`, `AccessibilitySettings`, `SeoSettings`, `PerformanceSettings` interfaces; `DEFAULT_SETTINGS` constant (mirrors all hardcoded analyzer thresholds); `STORAGE_KEY` constant
+- `settings.ts` — analyzer settings interfaces, frozen `DEFAULT_SETTINGS`, numeric `SETTING_LIMITS`, and `STORAGE_KEY`
 
 ### Communication Flow
 
 Popup → (`browser.tabs.sendMessage` with `{ action: 'analyze', settings: AnalyzerSettings }`) → Content Script → returns `AnalysisResult` → Popup renders
 
-The popup reads settings from `browser.storage.local` before each analysis and sends them in the message payload. The content script is stateless — it uses the settings for that one analysis and discards them. If `settings` is absent (older popup), the content script falls back to `DEFAULT_SETTINGS`.
+The popup reads settings from `browser.storage.local` before each analysis and sends them in the message payload. The content script validates messages and settings at runtime, uses defaults for missing or malformed settings, and discards settings after each analysis.
 
 ### Key Interfaces (defined in `src/content/types.ts`, re-exported from `src/content/content.ts`)
 
 ```typescript
 export interface AnalysisResult {
-  score: number; // 0–100 overall (mean of three categories)
+  score: number; // 0–100 average across enabled categories
   pageInfo: {
     url: string;
     title: string;
@@ -110,22 +110,24 @@ Other bundles consume them with zero runtime cost via `import type { AnalysisRes
 
 ### Library entry point (`src/index.ts`)
 
-The analyzers depend on nothing but `document` and `window.location`, so the extension is one consumer of them rather than their owner. `src/index.ts` exposes them to anything else with a DOM — a Playwright/Cypress spec, a CI script, a console session.
+The analyzers depend on nothing but `document` and `window.location`, so the extension is one consumer of them rather than their owner. `src/index.ts` exposes them to anything else with a DOM — a browser test, a CI script, or a console session.
 
 Public surface: `analyzePage(overrides?)`, `collectIssues(result)`, `performQualityAnalysis(settings)`, the three analyzers, `getCssSelector`/`getHtmlSnippet`, `DEFAULT_SETTINGS`, and all types.
 
 - `analyzePage` merges a **partial** override per category over `DEFAULT_SETTINGS`, so `{ seo: { enabled: false } }` disables SEO without disturbing any other threshold. It must not mutate `DEFAULT_SETTINGS` — there is a test pinning that.
-- A **disabled category scores 100, not 0** (`EMPTY_CATEGORY` in `analyze.ts`). It means "nothing found wrong", not "perfect"; averaging a 0 for a switched-off category would misreport the page.
+- A **disabled category is reported as 100 with no issues**, but is excluded from the overall average. If all categories are disabled, the overall score is 100; consumers should check whether categories were enabled before interpreting that score.
+
+The package root resolves to the named-export ESM bundle `dist/lib/wqa.mjs`; `dist/lib/wqa.js` remains the browser IIFE global for script injection.
 
 **When adding an export, update `tsconfig.lib.json`'s `include` if it pulls in a new directory**, or the declaration build will not cover it. `src/content/content.ts` is explicitly excluded there — it would drag `webextension-polyfill` into the library's type graph.
 
 ### Build Output
 
-Webpack accepts `--env browser=chrome|firefox` and outputs to `dist/<browser>/`. The correct manifest (`src/manifest.chrome.json` or `src/manifest.firefox.json`) and `src/popup.html` are copied alongside the bundles. `--env lib` builds the library instead.
+Webpack accepts `--env browser=chrome|firefox` and outputs to `dist/<browser>/`. The correct manifest (`src/manifest.chrome.json` or `src/manifest.firefox.json`) and `src/popup.html` are copied alongside the bundles. `--env lib` builds the IIFE; `--env esmLib` builds the ESM package entry. `npm run build:lib` runs both builds and generates declarations.
 
 - `dist/chrome/` — load via `chrome://extensions` → Load unpacked
 - `dist/firefox/` — load via `about:debugging` → Load Temporary Add-on → select `manifest.json`
-- `dist/lib/` — **committed to git.** `wqa.js` (webpack) plus `.d.ts` files (tsc via `tsconfig.lib.json`)
+- `dist/lib/` — **committed to git.** `wqa.js` IIFE, `wqa.mjs` ESM, and `.d.ts` files
 
 `dist/lib/` is the only build output in version control. Consumers install it as a git dependency (`npm i -D github:adrianjiga/WebQualityAnalyzer`), which has no publish step and no build-on-install, so the artifact has to be present in the tree. `.gitignore` uses `dist/*` + `!dist/lib/` — note that a bare `!dist/lib/wqa.js` under a `dist` rule does nothing, because **git will not descend into an ignored directory** to find a negated file.
 
@@ -150,7 +152,7 @@ The `onMessage` listener in `content.ts` returns a `Promise` (polyfill pattern) 
 
 | Workflow | File                          | Triggers                       | Steps                                          |
 | -------- | ----------------------------- | ------------------------------ | ---------------------------------------------- |
-| CI       | `.github/workflows/ci.yml`    | push (all branches), PR → main | lint, build, verify committed `dist/lib/`      |
+| CI       | `.github/workflows/ci.yml`    | push (all branches), PR → main | lint, build, package consumer checks, extension output checks, verify committed `dist/lib/` |
 | Tests    | `.github/workflows/tests.yml` | push (all branches), PR → main | test with coverage                             |
 
 The `dist/lib/` check rebuilds and fails on any difference from the commit. It tests **two** conditions — `git diff` for modified files, and `git ls-files --others` for a newly emitted file that was never added, which `git diff` alone would not catch. A stale committed artifact fails silently otherwise, because consumers keep asserting against the old logic.
@@ -177,7 +179,7 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 | `tests/helpers/helpers.ts`                 | Shared DOM helpers for content tests: `appendImg`, `appendInput`, `appendHeading`, `appendMeta`, `appendLink`, `appendH1`, `addImageWithDimensions`, `appendImgs`, `appendSpansWithStyle`, `appendExternalScripts`, `appendExternalLinks`, `appendExternalAnchors` |
 | `tests/helpers/popup.ts`                   | Shared popup fixtures: `buildCategory`, `buildResult`, `setupPopupDOM` (includes all settings DOM elements)         |
 
-Coverage baseline (2026-08): **95.83% stmts / 89.24% branches / 83.78% funcs / 96.14% lines** — all above the 80% global threshold. The threshold in `jest.config.ts` is the contract; this number is a dated snapshot.
+The enforced coverage threshold is 80% for statements, branches, functions, and lines; run `npm test -- --coverage` for current measurements. `jest.config.ts` is the source of truth.
 
 ### Setup
 
@@ -188,13 +190,13 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
 ### Key patterns
 
 - **Module load-time side effects** (background.ts, content.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
-- **onMessage listener signature**: the listener extracts `settings` from `{ action: 'analyze', settings? }`, falls back to `DEFAULT_SETTINGS`, and returns `Promise.resolve(performQualityAnalysis(settings))` — test it by awaiting the return value, not by checking a `sendResponse` callback.
+- **onMessage listener signature**: the listener validates `{ action: 'analyze', settings? }`, uses defaults for malformed settings, and returns a promise; test by awaiting the listener result, not by checking a `sendResponse` callback.
 - **Settings storage in tests**: `chrome.storage.local.get` must be mocked with `.mockResolvedValue({})` in `beforeEach` for any test that triggers `loadSettings()` (including `runAnalysis` tests). `jest.clearAllMocks()` wipes return values, so set the mock after clearing.
 - **Settings UI auto-save**: number inputs fire `saveSettings` on the `change` event; toggle checkboxes fire it on `change` too (plus update the `.disabled` class on the section body). The reset button is async — flush with `await new Promise(resolve => setTimeout(resolve, 0))` to wait for the full chain before asserting.
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.
 - **popup.css import**: `popup.ts` imports `./popup.css`; tests mock CSS modules via `moduleNameMapper` in `jest.config.ts` pointing to `tests/__mocks__/style.mock.ts`.
 - **DOM helpers**: all reusable DOM-construction functions live in `tests/helpers/helpers.ts`; popup fixtures (`buildCategory`, `buildResult`, `setupPopupDOM`) live in `tests/helpers/popup.ts`. Import from there rather than defining locally.
-- **Security hook in tests**: a `PreToolUse:Edit` hook rejects edits that set DOM content via direct HTML string assignment. Use `document.createElement` + `appendChild` when adding test DOM nodes; use `element.replaceChildren()` to clear rather than `innerHTML = ''`.
+- **DOM safety in tests**: use `document.createElement` and `appendChild` when constructing test DOM nodes; use `element.replaceChildren()` to clear fixtures.
 - **jsdom quirks**:
   - Any head manipulation (`appendChild`, `replaceChildren`) resets `document.title` — always set `document.title` _after_ modifying head children.
   - `img.naturalWidth` / `img.naturalHeight` are always `0` — use `Object.defineProperty` with a getter to simulate large images.

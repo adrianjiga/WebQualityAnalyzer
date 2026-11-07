@@ -10,6 +10,7 @@ describe('exportResults', () => {
 
   beforeEach(() => {
     setupPopupDOM();
+    jest.useFakeTimers();
     global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-url');
     global.URL.revokeObjectURL = jest.fn();
     clickSpy = jest
@@ -20,6 +21,7 @@ describe('exportResults', () => {
   afterEach(() => {
     clickSpy.mockRestore();
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   it('calls URL.createObjectURL with a Blob', () => {
@@ -39,8 +41,21 @@ describe('exportResults', () => {
     );
   });
 
-  it('calls URL.revokeObjectURL after the download is triggered', () => {
+  it('revokes the object URL after the download has had time to start', () => {
     exportResults(buildResult());
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1000);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+  });
+
+  it('removes the temporary anchor and schedules URL cleanup when clicking fails', () => {
+    clickSpy.mockImplementationOnce(() => {
+      throw new Error('download click failed');
+    });
+
+    expect(() => exportResults(buildResult())).toThrow('download click failed');
+    expect(document.body.querySelectorAll('a')).toHaveLength(0);
+    jest.advanceTimersByTime(1000);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
   });
 
@@ -194,6 +209,39 @@ describe('runAnalysis', () => {
     );
   });
 
+  it('shows a compatibility error for a malformed analysis response', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 1, url: 'https://example.com' },
+    ]);
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce({ score: 'bad' });
+
+    await runAnalysis();
+
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'analysis response was invalid'
+    );
+    expect(document.getElementById('export-btn')?.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('does not retain or export a previous result after a later failure', async () => {
+    (chrome.tabs.query as jest.Mock)
+      .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
+      .mockResolvedValueOnce([{ id: 2, url: 'https://example.com/second' }]);
+    (chrome.tabs.sendMessage as jest.Mock)
+      .mockResolvedValueOnce(MOCK_RESULT)
+      .mockRejectedValueOnce(new Error('No content script'));
+
+    await runAnalysis();
+    await runAnalysis();
+
+    document.getElementById('export-btn')?.dispatchEvent(new MouseEvent('click'));
+
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
+  });
+
   it('re-enables the analyze button even after an error', async () => {
     (chrome.tabs.query as jest.Mock).mockRejectedValueOnce(new Error('fail'));
 
@@ -211,6 +259,9 @@ describe('runAnalysis', () => {
     await runAnalysis();
 
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
   });
 
   it('does not send a message when the tab has no url', async () => {
@@ -221,6 +272,25 @@ describe('runAnalysis', () => {
     await runAnalysis();
 
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
+  });
+
+  it('clears previous page metadata when the next tab is unavailable', async () => {
+    (chrome.tabs.query as jest.Mock)
+      .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
+      .mockResolvedValueOnce([{ id: 2 }]);
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+
+    await runAnalysis();
+    await runAnalysis();
+
+    expect(document.getElementById('page-url')?.textContent).toBe('');
+    expect((document.getElementById('page-info') as HTMLElement).style.display).toBe('none');
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
   });
 
   it('restores the analyze button label after completion', async () => {

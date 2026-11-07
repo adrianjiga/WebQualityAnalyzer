@@ -13,7 +13,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src tests",
-    "build:lib": "webpack --env lib && npm run build:types",
+    "build:lib": "webpack --env lib && webpack --env esmLib && npm run build:types",
     "build:types": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
@@ -40,12 +40,13 @@
     "webpack": "^5.112.2",
     "webpack-cli": "^7.2.3"
   },
-  "main": "dist/lib/wqa.js",
+  "main": "dist/lib/wqa.mjs",
   "types": "dist/lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/lib/index.d.ts",
-      "default": "./dist/lib/wqa.js"
+      "import": "./dist/lib/wqa.mjs",
+      "default": "./dist/lib/wqa.mjs"
     },
     "./wqa.js": "./dist/lib/wqa.js"
   },

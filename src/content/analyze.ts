@@ -21,8 +21,8 @@ const EMPTY_CATEGORY: CategoryResult = {
  * (`src/index.ts`) expose it to any caller with a page: a test runner, a CI script, a
  * headless browser.
  *
- * A disabled category scores 100 rather than 0 — it is "nothing found wrong", not "perfect",
- * and averaging a 0 for a category the caller switched off would misreport the page.
+ * Disabled categories are reported with a score of 100 but are excluded from the overall
+ * average. If every category is disabled, the overall score is 100 because no checks ran.
  */
 export function performQualityAnalysis(
   settings: AnalyzerSettings = DEFAULT_SETTINGS
@@ -35,9 +35,14 @@ export function performQualityAnalysis(
     ? analyzePerformance(settings.performance)
     : EMPTY_CATEGORY;
 
-  const overallScore = Math.round(
-    (accessibility.score + seo.score + performance.score) / 3
-  );
+  const enabledScores = [
+    settings.accessibility.enabled ? accessibility.score : null,
+    settings.seo.enabled ? seo.score : null,
+    settings.performance.enabled ? performance.score : null,
+  ].filter((score): score is number => score !== null);
+  const overallScore = enabledScores.length
+    ? Math.round(enabledScores.reduce((total, score) => total + score, 0) / enabledScores.length)
+    : 100;
 
   return {
     score: overallScore,

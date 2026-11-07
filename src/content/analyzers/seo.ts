@@ -10,15 +10,15 @@ export function analyzeSEO(
   let score = 100;
 
   // Check for page title
-  const title = document.title;
-  if (!title || title.trim() === '') {
+  const title = document.title.trim();
+  if (!title) {
     issues.push({
       type: 'Page Title',
       message: 'Page has no title',
       severity: 'high'
     });
     suggestions.push('Add a descriptive page title (50-60 characters recommended)');
-    score -= 25; // TODO: expose as settings.noTitleDeduction
+    score -= settings.noTitleDeduction;
   } else if (title.length < settings.titleMinLength) {
     issues.push({
       type: 'Page Title',
@@ -39,16 +39,16 @@ export function analyzeSEO(
 
   // Check for meta description
   const metaDescription = document.querySelector('meta[name="description"]');
-  if (!metaDescription || !metaDescription.getAttribute('content')) {
+  if (!metaDescription || !metaDescription.getAttribute('content')?.trim()) {
     issues.push({
       type: 'Meta Description',
       message: 'Missing meta description',
       severity: 'high'
     });
     suggestions.push('Add a meta description (150-160 characters recommended)');
-    score -= 20; // TODO: expose as settings.noMetaDescDeduction
+    score -= settings.noMetaDescDeduction;
   } else {
-    const content = metaDescription.getAttribute('content') || '';
+    const content = metaDescription.getAttribute('content')?.trim() || '';
     if (content.length < settings.metaDescMinLength) {
       issues.push({
         type: 'Meta Description',

@@ -1,4 +1,5 @@
 import { analyzePerformance } from '../../src/content/analyzers/performance';
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 import {
   addImageWithDimensions,
   appendImgs,
@@ -32,6 +33,18 @@ describe('analyzePerformance', () => {
     expect(result.suggestions).not.toContain('Minify CSS and JavaScript files');
   });
 
+  it('uses configured external-resource deduction rate and cap', () => {
+    appendExternalScripts(15);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      externalResourcesThreshold: 10,
+      externalResourcesDeductionPerResource: 3,
+      externalResourcesDeductionCap: 8,
+    });
+
+    expect(result.score).toBe(92);
+  });
+
   it('includes three generic performance suggestions when the page has issues', () => {
     // 4 images without a loading attribute trigger the Lazy Loading issue (score < 100)
     appendImgs(4);
@@ -45,6 +58,16 @@ describe('analyzePerformance', () => {
 
   // ── Large images ────────────────────────────────────────────────────────────
   describe('large images', () => {
+    it('reports images whose intrinsic dimensions are unavailable', () => {
+      const image = document.createElement('img');
+      image.src = '/not-loaded.png';
+      document.body.appendChild(image);
+
+      expect(analyzePerformance().suggestions).toContain(
+        '1 images could not be checked for intrinsic dimensions; verify they load successfully and inspect their source sizes'
+      );
+    });
+
     it('flags images wider than 1920 pixels', () => {
       addImageWithDimensions(2000, 500);
       const issue = analyzePerformance().issues.find(
@@ -162,6 +185,31 @@ describe('analyzePerformance', () => {
 
   // ── External resources ──────────────────────────────────────────────────────
   describe('external resources', () => {
+    it('ignores same-origin scripts and stylesheets', () => {
+      const script = document.createElement('script');
+      script.src = `${window.location.origin}/app.js`;
+      const stylesheet = document.createElement('link');
+      stylesheet.rel = 'stylesheet';
+      stylesheet.href = `${window.location.origin}/app.css`;
+      document.head.append(script, stylesheet);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Resources')
+      ).toBe(false);
+    });
+
+    it('counts duplicate external resource URLs once', () => {
+      for (let i = 0; i < 11; i++) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.example.com/shared.js';
+        document.head.appendChild(script);
+      }
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Resources')
+      ).toBe(false);
+    });
+
     it('does not flag 10 or fewer external scripts', () => {
       appendExternalScripts(10);
       expect(
@@ -239,6 +287,36 @@ describe('analyzePerformance', () => {
 
   // ── External links ──────────────────────────────────────────────────────────
   describe('external links', () => {
+    it('treats a lookalike hostname as external', () => {
+      const link = document.createElement('a');
+      link.href = 'https://example.com.attacker.test/page';
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(true);
+    });
+
+    it('detects protocol-relative external URLs', () => {
+      const link = document.createElement('a');
+      link.setAttribute('href', '//external.example/path');
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(true);
+    });
+
+    it('does not classify relative links as external', () => {
+      const link = document.createElement('a');
+      link.setAttribute('href', '/about');
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(false);
+    });
+
     it('does not flag external links that have a rel attribute', () => {
       appendExternalAnchors(1, true);
       expect(
@@ -304,7 +382,6 @@ describe('analyzePerformance', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // analyzePerformance — custom settings
 // ══════════════════════════════════════════════════════════════════════════════
-import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 
 describe('analyzePerformance with custom settings', () => {
   beforeEach(() => {

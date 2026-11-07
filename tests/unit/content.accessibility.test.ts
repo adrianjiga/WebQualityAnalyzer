@@ -27,11 +27,11 @@ describe('analyzeAccessibility', () => {
       expect(issue?.message).toContain('1 images missing alt text');
     });
 
-    it('flags an image with an empty alt attribute', () => {
+    it('accepts an empty alt attribute as intentional decorative content', () => {
       appendImg('test.jpg', '');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Missing Alt Text')
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('flags an image with a whitespace-only alt attribute', () => {
@@ -149,11 +149,75 @@ describe('analyzeAccessibility', () => {
       ).toBe(false);
     });
 
+    it('handles selector-special IDs without throwing', () => {
+      appendInput('text', { id: 'name"]' });
+
+      expect(() => analyzeAccessibility()).not.toThrow();
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
+    });
+
+    it('matches labels for selector-special IDs', () => {
+      const label = document.createElement('label');
+      label.htmlFor = 'name"]';
+      label.textContent = 'Name';
+      document.body.appendChild(label);
+      appendInput('text', { id: 'name"]' });
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
     it('does not flag an input that has an aria-label attribute', () => {
       appendInput('text', { ariaLabel: 'Search terms' });
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
       ).toBe(false);
+    });
+
+    it('does not flag an input wrapped by a label', () => {
+      const label = document.createElement('label');
+      label.textContent = 'Name';
+      const input = document.createElement('input');
+      input.type = 'text';
+      label.appendChild(input);
+      document.body.appendChild(label);
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
+    it('does not flag an input with a valid aria-labelledby reference', () => {
+      const label = document.createElement('span');
+      label.id = 'name-label';
+      label.textContent = 'Name';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.setAttribute('aria-labelledby', label.id);
+      document.body.append(label, input);
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
+    it('does not treat an empty aria-label as an accessible name', () => {
+      appendInput('search', { ariaLabel: '   ' });
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
+    });
+
+    it('checks search inputs for labels', () => {
+      appendInput('search');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
     });
 
     it('flags an input that has an id but no matching label element', () => {
@@ -204,6 +268,24 @@ describe('analyzeAccessibility', () => {
 
   // ── Heading hierarchy ───────────────────────────────────────────────────────
   describe('heading hierarchy', () => {
+    it('does not treat the first heading level as a skipped level', () => {
+      appendHeading(2, 'Section');
+      appendHeading(3, 'Subsection');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Heading Hierarchy')
+      ).toBe(false);
+    });
+
+    it('still flags a jump between headings after the first heading', () => {
+      appendHeading(2, 'Section');
+      appendHeading(4, 'Nested section');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Heading Hierarchy')
+      ).toBe(true);
+    });
+
     it('does not flag a sequential heading structure (h1 -> h2 -> h3)', () => {
       appendHeading(1, 'Title');
       appendHeading(2, 'Section');
@@ -289,7 +371,7 @@ describe('analyzeAccessibility', () => {
       span.style.color = 'red';
       document.body.appendChild(span);
       expect(analyzeAccessibility().suggestions).toContain(
-        'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
+        'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
       );
     });
 
@@ -298,7 +380,7 @@ describe('analyzeAccessibility', () => {
       p.textContent = 'Plain text';
       document.body.appendChild(p);
       expect(analyzeAccessibility().suggestions).not.toContain(
-        'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
+        'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
       );
     });
 

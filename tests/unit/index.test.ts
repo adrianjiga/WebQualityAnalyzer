@@ -39,8 +39,7 @@ describe('analyzePage', () => {
       performance: { enabled: false },
     });
 
-    // A disabled category scores 100 ("nothing found wrong"), so the overall average is not
-    // dragged down by a category the caller deliberately switched off.
+    // Disabled categories are shown as 100 but excluded from the overall average.
     expect(result.categories.seo.issues).toEqual([]);
     expect(result.categories.seo.score).toBe(100);
     expect(result.categories.performance.score).toBe(100);
@@ -71,6 +70,37 @@ describe('analyzePage', () => {
     const before = DEFAULT_SETTINGS.accessibility.missingAltDeduction;
     analyzePage({ accessibility: { missingAltDeduction: 99 } });
     expect(DEFAULT_SETTINGS.accessibility.missingAltDeduction).toBe(before);
+  });
+
+  it('keeps analyzer scores bounded under extreme finite deductions', () => {
+    appendImg('/first.png');
+    const result = analyzePage({
+      accessibility: {
+        missingAltDeduction: 1_000_000,
+        missingAltCap: 1_000_000,
+        unlabelledInputDeduction: 1_000_000,
+        unlabelledInputCap: 1_000_000,
+        headingHierarchyDeduction: 1_000_000,
+      },
+      seo: {
+        noTitleDeduction: 1_000_000,
+        noMetaDescDeduction: 1_000_000,
+        noH1Deduction: 1_000_000,
+        multipleH1Deduction: 1_000_000,
+      },
+      performance: {
+        externalResourcesDeductionCap: 1_000_000,
+        externalResourcesDeductionPerResource: 1_000_000,
+        externalLinksDeductionCap: 1_000_000,
+      },
+    });
+
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(100);
+    for (const category of Object.values(result.categories)) {
+      expect(category.score).toBeGreaterThanOrEqual(0);
+      expect(category.score).toBeLessThanOrEqual(100);
+    }
   });
 });
 

@@ -56,8 +56,12 @@ export function setupPopupDOM(): void {
   ];
 
   const tabButtons = tabs.map(({ name, tab, active }) => {
-    const btn = document.createElement('div');
+    const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = active ? 'tab active' : 'tab';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', String(active));
+    btn.tabIndex = active ? 0 : -1;
     btn.dataset.tab = tab;
     btn.textContent = name;
     return btn;
@@ -67,6 +71,7 @@ export function setupPopupDOM(): void {
     const panel = document.createElement('div');
     panel.id = `${tab}-tab`;
     panel.className = active ? 'tab-content active' : 'tab-content';
+    panel.setAttribute('role', 'tabpanel');
     return panel;
   });
 
@@ -91,6 +96,8 @@ export function setupPopupDOM(): void {
     ['settings-seo-titleMaxLength', 'number', false],
     ['settings-seo-metaDescMinLength', 'number', false],
     ['settings-seo-metaDescMaxLength', 'number', false],
+    ['settings-seo-noTitleDeduction', 'number', false],
+    ['settings-seo-noMetaDescDeduction', 'number', false],
     ['settings-seo-noH1Deduction', 'number', false],
     ['settings-seo-multipleH1Deduction', 'number', false],
     ['settings-perf-enabled', 'checkbox', true],
@@ -98,6 +105,8 @@ export function setupPopupDOM(): void {
     ['settings-perf-imageMaxHeight', 'number', false],
     ['settings-perf-lazyLoadThreshold', 'number', false],
     ['settings-perf-externalResourcesThreshold', 'number', false],
+    ['settings-perf-externalResourcesDeductionPerResource', 'number', false],
+    ['settings-perf-externalResourcesDeductionCap', 'number', false],
     ['settings-perf-inlineStylesThreshold', 'number', false],
     ['settings-perf-externalLinksDeductionCap', 'number', false],
   ];
@@ -115,6 +124,18 @@ export function setupPopupDOM(): void {
     div.id = id;
     div.className = 'settings-section-body';
     settingsPanel.appendChild(div);
+  });
+
+  const sectionInputs: Array<[string, string]> = [
+    ['settings-a11y-body', 'settings-a11y-'],
+    ['settings-seo-body', 'settings-seo-'],
+    ['settings-perf-body', 'settings-perf-'],
+  ];
+  sectionInputs.forEach(([bodyId, prefix]) => {
+    const body = document.getElementById(bodyId)!;
+    settingsIds
+      .filter(([id]) => id.startsWith(prefix) && !id.endsWith('-enabled'))
+      .forEach(([id]) => body.appendChild(document.getElementById(id)!));
   });
 
   // Reset button
