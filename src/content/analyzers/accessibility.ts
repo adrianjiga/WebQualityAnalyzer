@@ -15,7 +15,8 @@ export function analyzeAccessibility(
   // Check for missing alt text on images
   const images = document.querySelectorAll('img');
   const imagesWithoutAlt = Array.from(images).filter(
-    (img) => !img.alt || img.alt.trim() === ''
+    (img) =>
+      !img.hasAttribute('alt') || (img.alt.length > 0 && img.alt.trim() === '')
   );
   if (imagesWithoutAlt.length > 0) {
     const firstImg = imagesWithoutAlt[0];
@@ -65,7 +66,9 @@ export function analyzeAccessibility(
   // Check for color contrast (basic check)
   const elementsWithColor = document.querySelectorAll('[style*="color"]');
   if (elementsWithColor.length > 0) {
-    suggestions.push('Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)');
+    suggestions.push(
+      'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
+    );
   }
 
   // Check for focus indicators

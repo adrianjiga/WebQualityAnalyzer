@@ -27,11 +27,11 @@ describe('analyzeAccessibility', () => {
       expect(issue?.message).toContain('1 images missing alt text');
     });
 
-    it('flags an image with an empty alt attribute', () => {
+    it('accepts an empty alt attribute as intentional decorative content', () => {
       appendImg('test.jpg', '');
       expect(
         analyzeAccessibility().issues.some((i) => i.type === 'Missing Alt Text')
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('flags an image with a whitespace-only alt attribute', () => {
@@ -353,7 +353,7 @@ describe('analyzeAccessibility', () => {
       span.style.color = 'red';
       document.body.appendChild(span);
       expect(analyzeAccessibility().suggestions).toContain(
-        'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
+        'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
       );
     });
 
@@ -362,7 +362,7 @@ describe('analyzeAccessibility', () => {
       p.textContent = 'Plain text';
       document.body.appendChild(p);
       expect(analyzeAccessibility().suggestions).not.toContain(
-        'Verify color contrast ratios meet WCAG guidelines (4.5:1 for normal text)'
+        'Inline color styles were found; manually check text/background contrast (this analyzer does not calculate contrast ratios)'
       );
     });
 

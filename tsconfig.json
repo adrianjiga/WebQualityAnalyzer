@@ -1,5 +1,6 @@
 {
   "include": ["src/**/*", "tests/**/*", "webpack.config.js"],
+  "exclude": ["tests/package-consumer.mts"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
