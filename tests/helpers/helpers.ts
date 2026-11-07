@@ -90,7 +90,7 @@ export function appendSpansWithStyle(count: number): void {
 export function appendExternalScripts(count: number): void {
   for (let i = 0; i < count; i++) {
     const script = document.createElement('script');
-    script.src = `http://cdn.example.com/lib-${i}.js`;
+    script.src = `https://cdn.example.com/lib-${i}.js`;
     document.head.appendChild(script);
   }
 }
@@ -99,7 +99,7 @@ export function appendExternalLinks(count: number): void {
   for (let i = 0; i < count; i++) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.setAttribute('href', `http://cdn.example.com/style-${i}.css`);
+    link.setAttribute('href', `https://cdn.example.com/style-${i}.css`);
     document.head.appendChild(link);
   }
 }
