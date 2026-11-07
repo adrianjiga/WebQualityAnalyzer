@@ -149,6 +149,27 @@ describe('analyzeAccessibility', () => {
       ).toBe(false);
     });
 
+    it('handles selector-special IDs without throwing', () => {
+      appendInput('text', { id: 'name"]' });
+
+      expect(() => analyzeAccessibility()).not.toThrow();
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
+    });
+
+    it('matches labels for selector-special IDs', () => {
+      const label = document.createElement('label');
+      label.htmlFor = 'name"]';
+      label.textContent = 'Name';
+      document.body.appendChild(label);
+      appendInput('text', { id: 'name"]' });
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
     it('does not flag an input that has an aria-label attribute', () => {
       appendInput('text', { ariaLabel: 'Search terms' });
       expect(

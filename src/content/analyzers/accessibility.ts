@@ -37,8 +37,12 @@ export function analyzeAccessibility(
   const inputsWithoutLabels = Array.from(inputs).filter((input) => {
     const id = input.getAttribute('id');
     const ariaLabel = input.getAttribute('aria-label');
-    const label = id ? document.querySelector(`label[for="${id}"]`) : null;
-    return !label && !ariaLabel;
+    const hasAssociatedLabel = id
+      ? Array.from(document.getElementsByTagName('label')).some(
+          (label) => label.htmlFor === id
+        )
+      : false;
+    return !hasAssociatedLabel && !ariaLabel;
   });
   if (inputsWithoutLabels.length > 0) {
     const firstInput = inputsWithoutLabels[0] as Element;
