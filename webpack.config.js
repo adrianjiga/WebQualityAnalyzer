@@ -71,6 +71,11 @@ export default (env) => {
   }
 
   const browser = env?.browser ?? 'chrome';
+  if (browser !== 'chrome' && browser !== 'firefox') {
+    throw new Error(
+      `Unsupported browser target "${browser}". Expected "chrome" or "firefox".`
+    );
+  }
   const outDir = resolve(__dirname, 'dist', browser);
   const manifestSrc = `src/manifest.${browser}.json`;
 
