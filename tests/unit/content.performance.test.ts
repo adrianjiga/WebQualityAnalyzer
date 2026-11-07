@@ -1,4 +1,5 @@
 import { analyzePerformance } from '../../src/content/analyzers/performance';
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 import {
   addImageWithDimensions,
   appendImgs,
@@ -30,6 +31,18 @@ describe('analyzePerformance', () => {
     );
     expect(result.suggestions).not.toContain('Enable gzip compression on your server');
     expect(result.suggestions).not.toContain('Minify CSS and JavaScript files');
+  });
+
+  it('uses configured external-resource deduction rate and cap', () => {
+    appendExternalScripts(15);
+    const result = analyzePerformance({
+      ...DEFAULT_SETTINGS.performance,
+      externalResourcesThreshold: 10,
+      externalResourcesDeductionPerResource: 3,
+      externalResourcesDeductionCap: 8,
+    });
+
+    expect(result.score).toBe(92);
   });
 
   it('includes three generic performance suggestions when the page has issues', () => {
@@ -304,7 +317,6 @@ describe('analyzePerformance', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // analyzePerformance — custom settings
 // ══════════════════════════════════════════════════════════════════════════════
-import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 
 describe('analyzePerformance with custom settings', () => {
   beforeEach(() => {

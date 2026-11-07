@@ -1,4 +1,5 @@
 import { analyzeSEO } from '../../src/content/analyzers/seo';
+import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 import { appendMeta, appendLink, appendH1 } from '../helpers/helpers';
 
 beforeEach(() => {
@@ -43,6 +44,16 @@ describe('analyzeSEO', () => {
       expect(issue?.message).toBe('Page has no title');
       expect(issue?.severity).toBe('high');
       expect(result.score).toBe(75);
+    });
+
+    it('uses the configured missing-title deduction', () => {
+      appendMeta({ name: 'description', content: GOOD_META });
+      appendH1();
+      const result = analyzeSEO({
+        ...DEFAULT_SETTINGS.seo,
+        noTitleDeduction: 7,
+      });
+      expect(result.score).toBe(93);
     });
 
     it('deducts 15 points for a title shorter than 10 characters', () => {
@@ -245,7 +256,6 @@ describe('analyzeSEO', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 // analyzeSEO — custom settings
 // ══════════════════════════════════════════════════════════════════════════════
-import { DEFAULT_SETTINGS } from '../../src/shared/settings';
 
 describe('analyzeSEO with custom settings', () => {
   beforeEach(() => {

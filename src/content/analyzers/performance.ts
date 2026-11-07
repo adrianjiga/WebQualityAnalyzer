@@ -51,7 +51,11 @@ export function analyzePerformance(
       severity: 'medium'
     });
     suggestions.push('Consider bundling or reducing external resources to improve load times');
-    score -= Math.min(15, (totalExternal - settings.externalResourcesThreshold) * 2); // TODO: expose cap (15) and per-resource deduction (2) as settings
+    score -= Math.min(
+      settings.externalResourcesDeductionCap,
+      (totalExternal - settings.externalResourcesThreshold) *
+        settings.externalResourcesDeductionPerResource
+    );
   }
 
   // Check for inline styles

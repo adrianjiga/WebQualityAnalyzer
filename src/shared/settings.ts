@@ -13,6 +13,8 @@ export interface SeoSettings {
   titleMaxLength: number;
   metaDescMinLength: number;
   metaDescMaxLength: number;
+  noTitleDeduction: number;
+  noMetaDescDeduction: number;
   noH1Deduction: number;
   multipleH1Deduction: number;
 }
@@ -23,6 +25,8 @@ export interface PerformanceSettings {
   imageMaxHeight: number;
   lazyLoadThreshold: number;
   externalResourcesThreshold: number;
+  externalResourcesDeductionPerResource: number;
+  externalResourcesDeductionCap: number;
   inlineStylesThreshold: number;
   externalLinksDeductionCap: number;
 }
@@ -50,6 +54,8 @@ export const DEFAULT_SETTINGS: AnalyzerSettings = {
     titleMaxLength: 60,
     metaDescMinLength: 120,
     metaDescMaxLength: 160,
+    noTitleDeduction: 25,
+    noMetaDescDeduction: 20,
     noH1Deduction: 20,
     multipleH1Deduction: 15,
   },
@@ -59,6 +65,8 @@ export const DEFAULT_SETTINGS: AnalyzerSettings = {
     imageMaxHeight: 1080,
     lazyLoadThreshold: 3,
     externalResourcesThreshold: 10,
+    externalResourcesDeductionPerResource: 2,
+    externalResourcesDeductionCap: 15,
     inlineStylesThreshold: 20,
     externalLinksDeductionCap: 10,
   },

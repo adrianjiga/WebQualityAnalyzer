@@ -91,6 +91,8 @@ export function setupPopupDOM(): void {
     ['settings-seo-titleMaxLength', 'number', false],
     ['settings-seo-metaDescMinLength', 'number', false],
     ['settings-seo-metaDescMaxLength', 'number', false],
+    ['settings-seo-noTitleDeduction', 'number', false],
+    ['settings-seo-noMetaDescDeduction', 'number', false],
     ['settings-seo-noH1Deduction', 'number', false],
     ['settings-seo-multipleH1Deduction', 'number', false],
     ['settings-perf-enabled', 'checkbox', true],
@@ -98,6 +100,8 @@ export function setupPopupDOM(): void {
     ['settings-perf-imageMaxHeight', 'number', false],
     ['settings-perf-lazyLoadThreshold', 'number', false],
     ['settings-perf-externalResourcesThreshold', 'number', false],
+    ['settings-perf-externalResourcesDeductionPerResource', 'number', false],
+    ['settings-perf-externalResourcesDeductionCap', 'number', false],
     ['settings-perf-inlineStylesThreshold', 'number', false],
     ['settings-perf-externalLinksDeductionCap', 'number', false],
   ];

@@ -241,6 +241,8 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
   set('settings-seo-titleMaxLength', String(settings.seo.titleMaxLength));
   set('settings-seo-metaDescMinLength', String(settings.seo.metaDescMinLength));
   set('settings-seo-metaDescMaxLength', String(settings.seo.metaDescMaxLength));
+  set('settings-seo-noTitleDeduction', String(settings.seo.noTitleDeduction));
+  set('settings-seo-noMetaDescDeduction', String(settings.seo.noMetaDescDeduction));
   set('settings-seo-noH1Deduction', String(settings.seo.noH1Deduction));
   set('settings-seo-multipleH1Deduction', String(settings.seo.multipleH1Deduction));
 
@@ -250,6 +252,8 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
   set('settings-perf-imageMaxHeight', String(settings.performance.imageMaxHeight));
   set('settings-perf-lazyLoadThreshold', String(settings.performance.lazyLoadThreshold));
   set('settings-perf-externalResourcesThreshold', String(settings.performance.externalResourcesThreshold));
+  set('settings-perf-externalResourcesDeductionPerResource', String(settings.performance.externalResourcesDeductionPerResource));
+  set('settings-perf-externalResourcesDeductionCap', String(settings.performance.externalResourcesDeductionCap));
   set('settings-perf-inlineStylesThreshold', String(settings.performance.inlineStylesThreshold));
   set('settings-perf-externalLinksDeductionCap', String(settings.performance.externalLinksDeductionCap));
 
@@ -283,6 +287,8 @@ export function collectSettings(): AnalyzerSettings {
       titleMaxLength: num('settings-seo-titleMaxLength', d.seo.titleMaxLength),
       metaDescMinLength: num('settings-seo-metaDescMinLength', d.seo.metaDescMinLength),
       metaDescMaxLength: num('settings-seo-metaDescMaxLength', d.seo.metaDescMaxLength),
+      noTitleDeduction: num('settings-seo-noTitleDeduction', d.seo.noTitleDeduction),
+      noMetaDescDeduction: num('settings-seo-noMetaDescDeduction', d.seo.noMetaDescDeduction),
       noH1Deduction: num('settings-seo-noH1Deduction', d.seo.noH1Deduction),
       multipleH1Deduction: num('settings-seo-multipleH1Deduction', d.seo.multipleH1Deduction),
     },
@@ -292,6 +298,8 @@ export function collectSettings(): AnalyzerSettings {
       imageMaxHeight: num('settings-perf-imageMaxHeight', d.performance.imageMaxHeight),
       lazyLoadThreshold: num('settings-perf-lazyLoadThreshold', d.performance.lazyLoadThreshold),
       externalResourcesThreshold: num('settings-perf-externalResourcesThreshold', d.performance.externalResourcesThreshold),
+      externalResourcesDeductionPerResource: num('settings-perf-externalResourcesDeductionPerResource', d.performance.externalResourcesDeductionPerResource),
+      externalResourcesDeductionCap: num('settings-perf-externalResourcesDeductionCap', d.performance.externalResourcesDeductionCap),
       inlineStylesThreshold: num('settings-perf-inlineStylesThreshold', d.performance.inlineStylesThreshold),
       externalLinksDeductionCap: num('settings-perf-externalLinksDeductionCap', d.performance.externalLinksDeductionCap),
     },
