@@ -245,6 +245,9 @@ describe('runAnalysis', () => {
     await runAnalysis();
 
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
   });
 
   it('does not send a message when the tab has no url', async () => {
@@ -255,6 +258,25 @@ describe('runAnalysis', () => {
     await runAnalysis();
 
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
+  });
+
+  it('clears previous page metadata when the next tab is unavailable', async () => {
+    (chrome.tabs.query as jest.Mock)
+      .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
+      .mockResolvedValueOnce([{ id: 2 }]);
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+
+    await runAnalysis();
+    await runAnalysis();
+
+    expect(document.getElementById('page-url')?.textContent).toBe('');
+    expect((document.getElementById('page-info') as HTMLElement).style.display).toBe('none');
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
   });
 
   it('restores the analyze button label after completion', async () => {

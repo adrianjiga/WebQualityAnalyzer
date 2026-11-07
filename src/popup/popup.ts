@@ -83,6 +83,10 @@ export async function runAnalysis(): Promise<void> {
   analyzeButton.disabled = true;
   analyzeButton.textContent = 'Analyzing...';
   exportButton.disabled = true;
+  const pageInfo = document.getElementById('page-info') as HTMLDivElement;
+  const pageUrl = document.getElementById('page-url') as HTMLDivElement;
+  pageInfo.style.display = 'none';
+  pageUrl.textContent = '';
 
   // Show loading state
   showLoadingState();
@@ -106,6 +110,8 @@ export async function runAnalysis(): Promise<void> {
       currentAnalysis = response;
       displayResults(response);
       exportButton.disabled = false;
+    } else {
+      throw new Error('The active tab is unavailable.');
     }
   } catch (_error) {
     showError("Could not analyze page. Make sure you're on a valid webpage.");
