@@ -9,13 +9,14 @@ import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
 
 let currentAnalysis: AnalysisResult | null = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+export function initializePopup(): void {
   const analyzeButton = document.getElementById(
     'analyze-btn'
   ) as HTMLButtonElement;
   const exportButton = document.getElementById(
     'export-btn'
   ) as HTMLButtonElement;
+  if (!analyzeButton || !exportButton) return;
 
   // Tab functionality
   const tabs = document.querySelectorAll('.tab');
@@ -40,7 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Settings
   initSettings();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePopup, { once: true });
+} else {
+  initializePopup();
+}
 
 export async function runAnalysis(): Promise<void> {
   const analyzeButton = document.getElementById(

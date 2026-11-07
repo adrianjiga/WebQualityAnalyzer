@@ -3,9 +3,24 @@ import {
   updatePageInfo,
   showLoadingState,
   showError,
+  initializePopup,
 } from '../../src/popup/popup';
 
 import { setupPopupDOM } from '../helpers/popup';
+
+describe('initializePopup', () => {
+  it('initializes popup controls when the document is already available', () => {
+    setupPopupDOM();
+    initializePopup();
+
+    document.querySelector('[data-tab="seo"]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+
+    expect(document.querySelector('[data-tab="seo"]')?.classList.contains('active')).toBe(true);
+    expect(document.getElementById('seo-tab')?.classList.contains('active')).toBe(true);
+  });
+});
 
 // ══════════════════════════════════════════════════════════════════════════════
 // switchTab
