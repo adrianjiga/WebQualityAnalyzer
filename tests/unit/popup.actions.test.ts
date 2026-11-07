@@ -48,6 +48,17 @@ describe('exportResults', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
   });
 
+  it('removes the temporary anchor and schedules URL cleanup when clicking fails', () => {
+    clickSpy.mockImplementationOnce(() => {
+      throw new Error('download click failed');
+    });
+
+    expect(() => exportResults(buildResult())).toThrow('download click failed');
+    expect(document.body.querySelectorAll('a')).toHaveLength(0);
+    jest.advanceTimersByTime(1000);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+  });
+
   it('includes the analysis data in the exported Blob', () => {
     const result = buildResult({ score: 77 });
     exportResults(result);
