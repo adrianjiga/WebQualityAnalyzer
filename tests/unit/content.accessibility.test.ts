@@ -268,6 +268,24 @@ describe('analyzeAccessibility', () => {
 
   // ── Heading hierarchy ───────────────────────────────────────────────────────
   describe('heading hierarchy', () => {
+    it('does not treat the first heading level as a skipped level', () => {
+      appendHeading(2, 'Section');
+      appendHeading(3, 'Subsection');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Heading Hierarchy')
+      ).toBe(false);
+    });
+
+    it('still flags a jump between headings after the first heading', () => {
+      appendHeading(2, 'Section');
+      appendHeading(4, 'Nested section');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Heading Hierarchy')
+      ).toBe(true);
+    });
+
     it('does not flag a sequential heading structure (h1 -> h2 -> h3)', () => {
       appendHeading(1, 'Title');
       appendHeading(2, 'Section');

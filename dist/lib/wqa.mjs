@@ -133,13 +133,13 @@ function analyzeAccessibility(settings = _shared_settings__WEBPACK_IMPORTED_MODU
     const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
     if (headings.length > 0) {
         const headingLevels = Array.from(headings).map(h => parseInt(h.tagName.charAt(1)));
-        let previousLevel = 0;
+        let previousLevel = headingLevels[0] ?? 0;
         let hasSkippedLevel = false;
         let firstSkippedHeading = null;
-        headingLevels.forEach((level, i) => {
+        headingLevels.slice(1).forEach((level, offset) => {
             if (level > previousLevel + 1 && !firstSkippedHeading) {
                 hasSkippedLevel = true;
-                firstSkippedHeading = headings[i];
+                firstSkippedHeading = headings[offset + 1] ?? null;
             }
             previousLevel = level;
         });
