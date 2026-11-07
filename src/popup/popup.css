@@ -316,6 +316,7 @@ details[open] > .issue-summary::before {
   gap: 10px;
 }
 .settings-section {
+  position: relative;
   border: 1px solid #dde3ea;
   border-radius: 8px;
   overflow: hidden;
@@ -332,6 +333,7 @@ details[open] > .issue-summary::before {
   font-size: 13px;
   color: #0a2540;
   user-select: none;
+  padding-right: 58px;
 }
 .settings-section-header::-webkit-details-marker {
   display: none;
@@ -384,11 +386,14 @@ details[open] > .settings-section-header::before {
   box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.15);
 }
 .settings-toggle {
-  position: relative;
-  display: inline-block;
+  position: absolute;
+  display: block;
   width: 34px;
   height: 18px;
   flex-shrink: 0;
+  top: 11px;
+  right: 14px;
+  z-index: 1;
 }
 .settings-toggle input {
   opacity: 0;
