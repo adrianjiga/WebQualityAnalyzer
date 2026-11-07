@@ -252,6 +252,36 @@ describe('analyzePerformance', () => {
 
   // ── External links ──────────────────────────────────────────────────────────
   describe('external links', () => {
+    it('treats a lookalike hostname as external', () => {
+      const link = document.createElement('a');
+      link.href = 'https://example.com.attacker.test/page';
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(true);
+    });
+
+    it('detects protocol-relative external URLs', () => {
+      const link = document.createElement('a');
+      link.setAttribute('href', '//external.example/path');
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(true);
+    });
+
+    it('does not classify relative links as external', () => {
+      const link = document.createElement('a');
+      link.setAttribute('href', '/about');
+      document.body.appendChild(link);
+
+      expect(
+        analyzePerformance().issues.some((i) => i.type === 'External Links')
+      ).toBe(false);
+    });
+
     it('does not flag external links that have a rel attribute', () => {
       appendExternalAnchors(1, true);
       expect(

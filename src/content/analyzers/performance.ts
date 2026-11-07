@@ -71,12 +71,22 @@ export function analyzePerformance(
   }
 
   // Check for external links without proper attributes
-  const externalLinks = Array.from(
-    document.querySelectorAll('a[href^="http"]')
-  ).filter((link) => {
-    const href = link.getAttribute('href');
-    return href && !href.includes(window.location.hostname);
-  });
+  const externalLinks = Array.from(document.querySelectorAll('a[href]')).filter(
+    (link) => {
+      const href = link.getAttribute('href');
+      if (!href) return false;
+
+      try {
+        const target = new URL(href, window.location.href);
+        return (
+          (target.protocol === 'http:' || target.protocol === 'https:') &&
+          target.hostname !== window.location.hostname
+        );
+      } catch {
+        return false;
+      }
+    }
+  );
   const externalLinksWithoutRel = externalLinks.filter(
     (link) => !link.getAttribute('rel')
   );
