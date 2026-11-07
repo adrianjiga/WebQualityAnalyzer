@@ -18,39 +18,39 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="overview">Overview</div>
-    <div class="tab" data-tab="accessibility">A11y</div>
-    <div class="tab" data-tab="seo">SEO</div>
-    <div class="tab" data-tab="performance">Perf</div>
-    <div class="tab" data-tab="settings">Settings</div>
+  <div class="tabs" role="tablist" aria-label="Analysis sections">
+    <button class="tab active" id="overview-tab-button" type="button" role="tab" aria-selected="true" aria-controls="overview-tab" tabindex="0" data-tab="overview">Overview</button>
+    <button class="tab" id="accessibility-tab-button" type="button" role="tab" aria-selected="false" aria-controls="accessibility-tab" tabindex="-1" data-tab="accessibility">A11y</button>
+    <button class="tab" id="seo-tab-button" type="button" role="tab" aria-selected="false" aria-controls="seo-tab" tabindex="-1" data-tab="seo">SEO</button>
+    <button class="tab" id="performance-tab-button" type="button" role="tab" aria-selected="false" aria-controls="performance-tab" tabindex="-1" data-tab="performance">Perf</button>
+    <button class="tab" id="settings-tab-button" type="button" role="tab" aria-selected="false" aria-controls="settings-tab" tabindex="-1" data-tab="settings">Settings</button>
   </div>
 
-  <div id="overview-tab" class="tab-content active">
+  <div id="overview-tab" class="tab-content active" role="tabpanel" aria-labelledby="overview-tab-button" tabindex="0">
     <div class="empty-state">
       Click "Analyze Page" to start quality analysis
     </div>
   </div>
 
-  <div id="accessibility-tab" class="tab-content">
+  <div id="accessibility-tab" class="tab-content" role="tabpanel" aria-labelledby="accessibility-tab-button" tabindex="0">
     <div class="empty-state">
       No accessibility data available
     </div>
   </div>
 
-  <div id="seo-tab" class="tab-content">
+  <div id="seo-tab" class="tab-content" role="tabpanel" aria-labelledby="seo-tab-button" tabindex="0">
     <div class="empty-state">
       No SEO data available
     </div>
   </div>
 
-  <div id="performance-tab" class="tab-content">
+  <div id="performance-tab" class="tab-content" role="tabpanel" aria-labelledby="performance-tab-button" tabindex="0">
     <div class="empty-state">
       No performance data available
     </div>
   </div>
 
-  <div id="settings-tab" class="tab-content">
+  <div id="settings-tab" class="tab-content" role="tabpanel" aria-labelledby="settings-tab-button" tabindex="0">
     <div class="settings-container">
 
       <details class="settings-section" open>

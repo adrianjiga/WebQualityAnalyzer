@@ -79,6 +79,10 @@ button:disabled {
   transition:
     color 0.15s,
     background 0.15s;
+  background: white;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
 }
 .tab.active {
   border-bottom-color: #0070f3;

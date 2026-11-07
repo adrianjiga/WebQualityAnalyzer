@@ -56,8 +56,12 @@ export function setupPopupDOM(): void {
   ];
 
   const tabButtons = tabs.map(({ name, tab, active }) => {
-    const btn = document.createElement('div');
+    const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = active ? 'tab active' : 'tab';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', String(active));
+    btn.tabIndex = active ? 0 : -1;
     btn.dataset.tab = tab;
     btn.textContent = name;
     return btn;
@@ -67,6 +71,7 @@ export function setupPopupDOM(): void {
     const panel = document.createElement('div');
     panel.id = `${tab}-tab`;
     panel.className = active ? 'tab-content active' : 'tab-content';
+    panel.setAttribute('role', 'tabpanel');
     return panel;
   });
 

@@ -77,6 +77,26 @@ describe('switchTab', () => {
     expect(document.querySelector('[data-tab="settings"]')?.classList.contains('active')).toBe(true);
   });
 
+  it('updates ARIA selection and roving tabindex when switching tabs', () => {
+    switchTab('seo');
+    const seoTab = document.querySelector('[data-tab="seo"]');
+    const overviewTab = document.querySelector('[data-tab="overview"]');
+
+    expect(seoTab?.getAttribute('aria-selected')).toBe('true');
+    expect((seoTab as HTMLButtonElement).tabIndex).toBe(0);
+    expect(overviewTab?.getAttribute('aria-selected')).toBe('false');
+    expect((overviewTab as HTMLButtonElement).tabIndex).toBe(-1);
+  });
+
+  it('supports arrow-key navigation between tabs', () => {
+    setupPopupDOM();
+    initializePopup();
+    const overviewTab = document.querySelector('[data-tab="overview"]') as HTMLButtonElement;
+    overviewTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+
+    expect(document.querySelector('[data-tab="accessibility"]')?.classList.contains('active')).toBe(true);
+  });
+
   it('shows only one active panel after switching to settings', () => {
     switchTab('settings');
     expect(document.querySelectorAll('.tab-content.active')).toHaveLength(1);

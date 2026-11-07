@@ -24,7 +24,28 @@ export function initializePopup(): void {
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       const tabName = tab.getAttribute('data-tab');
-      switchTab(tabName!);
+      if (tabName) switchTab(tabName);
+    });
+    tab.addEventListener('keydown', (event) => {
+      const keyEvent = event as KeyboardEvent;
+      const tabList = Array.from(document.querySelectorAll<HTMLElement>('.tab'));
+      const currentIndex = tabList.indexOf(tab as HTMLElement);
+      const nextIndex = keyEvent.key === 'ArrowRight'
+        ? (currentIndex + 1) % tabList.length
+        : keyEvent.key === 'ArrowLeft'
+          ? (currentIndex - 1 + tabList.length) % tabList.length
+          : keyEvent.key === 'Home'
+            ? 0
+            : keyEvent.key === 'End'
+              ? tabList.length - 1
+              : -1;
+      if (nextIndex < 0) return;
+      keyEvent.preventDefault();
+      const nextTab = tabList[nextIndex];
+      const tabName = nextTab?.getAttribute('data-tab');
+      if (!nextTab || !tabName) return;
+      switchTab(tabName);
+      nextTab.focus();
     });
   });
 
@@ -97,7 +118,10 @@ export async function runAnalysis(): Promise<void> {
 export function switchTab(tabName: string): void {
   // Update tab buttons
   document.querySelectorAll('.tab').forEach((tab) => {
-    tab.classList.remove('active');
+    const selected = tab.getAttribute('data-tab') === tabName;
+    tab.classList.toggle('active', selected);
+    tab.setAttribute('aria-selected', String(selected));
+    (tab as HTMLElement).tabIndex = selected ? 0 : -1;
   });
   document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
 
