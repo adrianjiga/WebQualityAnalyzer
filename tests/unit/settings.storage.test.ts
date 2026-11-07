@@ -43,6 +43,32 @@ describe('loadSettings', () => {
     const result = await loadSettings();
     expect(result).toEqual(DEFAULT_SETTINGS);
   });
+
+  it('falls back to per-field defaults for malformed stored values', async () => {
+    storageGet.mockResolvedValue({
+      [STORAGE_KEY]: {
+        accessibility: {
+          enabled: 'false',
+          missingAltDeduction: null,
+          missingAltCap: -5,
+          unlabelledInputDeduction: Number.NaN,
+          headingHierarchyDeduction: 12,
+        },
+        seo: null,
+        performance: [],
+      },
+    });
+
+    const result = await loadSettings();
+
+    expect(result.accessibility.enabled).toBe(DEFAULT_SETTINGS.accessibility.enabled);
+    expect(result.accessibility.missingAltDeduction).toBe(DEFAULT_SETTINGS.accessibility.missingAltDeduction);
+    expect(result.accessibility.missingAltCap).toBe(-5);
+    expect(result.accessibility.unlabelledInputDeduction).toBe(DEFAULT_SETTINGS.accessibility.unlabelledInputDeduction);
+    expect(result.accessibility.headingHierarchyDeduction).toBe(12);
+    expect(result.seo).toEqual(DEFAULT_SETTINGS.seo);
+    expect(result.performance).toEqual(DEFAULT_SETTINGS.performance);
+  });
 });
 
 describe('saveSettings', () => {

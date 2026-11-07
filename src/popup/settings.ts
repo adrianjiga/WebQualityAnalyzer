@@ -8,10 +8,10 @@ import {
 export async function loadSettings(): Promise<AnalyzerSettings> {
   const result = await browser.storage.local.get(STORAGE_KEY);
   const stored = (result as Record<string, unknown>)[STORAGE_KEY];
-  if (!stored || typeof stored !== 'object') {
-    return DEFAULT_SETTINGS;
+  if (!isRecord(stored)) {
+    return cloneDefaults();
   }
-  return deepMerge(DEFAULT_SETTINGS, stored as Partial<AnalyzerSettings>);
+  return mergeValidatedSettings(stored);
 }
 
 export async function saveSettings(settings: AnalyzerSettings): Promise<void> {
@@ -23,13 +23,44 @@ export async function resetSettings(): Promise<AnalyzerSettings> {
   return DEFAULT_SETTINGS;
 }
 
-function deepMerge(
-  defaults: AnalyzerSettings,
-  stored: Partial<AnalyzerSettings>
-): AnalyzerSettings {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function cloneDefaults(): AnalyzerSettings {
   return {
-    accessibility: { ...defaults.accessibility, ...stored.accessibility },
-    seo: { ...defaults.seo, ...stored.seo },
-    performance: { ...defaults.performance, ...stored.performance },
+    accessibility: { ...DEFAULT_SETTINGS.accessibility },
+    seo: { ...DEFAULT_SETTINGS.seo },
+    performance: { ...DEFAULT_SETTINGS.performance },
+  };
+}
+
+function mergeCategory<T extends object>(
+  defaults: T,
+  stored: unknown
+): T {
+  const candidate = isRecord(stored) ? stored : {};
+  const merged = { ...defaults } as T;
+
+  for (const key of Object.keys(defaults) as Array<keyof T>) {
+    const value = candidate[key as string];
+    const defaultValue: unknown = defaults[key];
+    if (
+      (typeof defaultValue === 'boolean' && typeof value === 'boolean') ||
+      (typeof defaultValue === 'number' &&
+        typeof value === 'number' &&
+        Number.isFinite(value))
+    ) {
+      (merged as Record<keyof T, unknown>)[key] = value;
+    }
+  }
+  return merged;
+}
+
+function mergeValidatedSettings(stored: Record<string, unknown>): AnalyzerSettings {
+  return {
+    accessibility: mergeCategory(DEFAULT_SETTINGS.accessibility, stored.accessibility),
+    seo: mergeCategory(DEFAULT_SETTINGS.seo, stored.seo),
+    performance: mergeCategory(DEFAULT_SETTINGS.performance, stored.performance),
   };
 }
