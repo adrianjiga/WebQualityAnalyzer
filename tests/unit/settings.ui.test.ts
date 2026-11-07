@@ -76,6 +76,22 @@ describe('populateSettingsUI', () => {
     expect(document.getElementById('settings-seo-body')?.classList.contains('disabled')).toBe(true);
   });
 
+  it('disables section inputs semantically when analyzer is disabled', () => {
+    populateSettingsUI({ ...DEFAULT_SETTINGS, seo: { ...DEFAULT_SETTINGS.seo, enabled: false } });
+    const input = document.getElementById('settings-seo-titleMinLength') as HTMLInputElement;
+
+    expect(input.disabled).toBe(true);
+    expect(document.getElementById('settings-seo-body')?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('enables section inputs semantically when analyzer is enabled', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    const input = document.getElementById('settings-seo-titleMinLength') as HTMLInputElement;
+
+    expect(input.disabled).toBe(false);
+    expect(document.getElementById('settings-seo-body')?.getAttribute('aria-disabled')).toBe('false');
+  });
+
   it('removes .disabled class from section body when analyzer is enabled', () => {
     const body = document.getElementById('settings-a11y-body')!;
     body.classList.add('disabled');

@@ -342,7 +342,15 @@ function sanitizeSettings(settings: AnalyzerSettings): AnalyzerSettings {
 }
 
 function updateSectionDisabledState(bodyId: string, enabled: boolean): void {
-  document.getElementById(bodyId)?.classList.toggle('disabled', !enabled);
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  body.classList.toggle('disabled', !enabled);
+  body.setAttribute('aria-disabled', String(!enabled));
+  body.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+    'input, select, textarea'
+  ).forEach((control) => {
+    control.disabled = !enabled;
+  });
 }
 
 export function attachSettingsListeners(): void {

@@ -121,6 +121,18 @@ export function setupPopupDOM(): void {
     settingsPanel.appendChild(div);
   });
 
+  const sectionInputs: Array<[string, string]> = [
+    ['settings-a11y-body', 'settings-a11y-'],
+    ['settings-seo-body', 'settings-seo-'],
+    ['settings-perf-body', 'settings-perf-'],
+  ];
+  sectionInputs.forEach(([bodyId, prefix]) => {
+    const body = document.getElementById(bodyId)!;
+    settingsIds
+      .filter(([id]) => id.startsWith(prefix) && !id.endsWith('-enabled'))
+      .forEach(([id]) => body.appendChild(document.getElementById(id)!));
+  });
+
   // Reset button
   const resetBtn = document.createElement('button');
   resetBtn.id = 'settings-reset-btn';
