@@ -32,17 +32,22 @@ export function analyzeAccessibility(
 
   // Check for form labels
   const inputs = document.querySelectorAll(
-    'input[type="text"], input[type="email"], input[type="password"], textarea, select'
+    'input:not([type="hidden"]), textarea, select'
   );
   const inputsWithoutLabels = Array.from(inputs).filter((input) => {
-    const id = input.getAttribute('id');
-    const ariaLabel = input.getAttribute('aria-label');
-    const hasAssociatedLabel = id
-      ? Array.from(document.getElementsByTagName('label')).some(
-          (label) => label.htmlFor === id
-        )
-      : false;
-    return !hasAssociatedLabel && !ariaLabel;
+    const ariaLabel = input.getAttribute('aria-label')?.trim();
+    const labelledBy = input
+      .getAttribute('aria-labelledby')
+      ?.trim()
+      .split(/\s+/)
+      .some((id) => {
+        const label = document.getElementById(id);
+        return Boolean(label?.textContent?.trim());
+      });
+    const hasAssociatedLabel = Array.from(
+      document.getElementsByTagName('label')
+    ).some((label) => label.htmlFor === input.id || label.contains(input));
+    return !hasAssociatedLabel && !ariaLabel && !labelledBy;
   });
   if (inputsWithoutLabels.length > 0) {
     const firstInput = inputsWithoutLabels[0] as Element;

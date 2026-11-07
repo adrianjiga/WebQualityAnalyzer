@@ -177,6 +177,49 @@ describe('analyzeAccessibility', () => {
       ).toBe(false);
     });
 
+    it('does not flag an input wrapped by a label', () => {
+      const label = document.createElement('label');
+      label.textContent = 'Name';
+      const input = document.createElement('input');
+      input.type = 'text';
+      label.appendChild(input);
+      document.body.appendChild(label);
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
+    it('does not flag an input with a valid aria-labelledby reference', () => {
+      const label = document.createElement('span');
+      label.id = 'name-label';
+      label.textContent = 'Name';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.setAttribute('aria-labelledby', label.id);
+      document.body.append(label, input);
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(false);
+    });
+
+    it('does not treat an empty aria-label as an accessible name', () => {
+      appendInput('search', { ariaLabel: '   ' });
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
+    });
+
+    it('checks search inputs for labels', () => {
+      appendInput('search');
+
+      expect(
+        analyzeAccessibility().issues.some((i) => i.type === 'Form Accessibility')
+      ).toBe(true);
+    });
+
     it('flags an input that has an id but no matching label element', () => {
       appendInput('text', { id: 'orphan' });
       expect(
