@@ -58,6 +58,16 @@ describe('analyzePerformance', () => {
 
   // ── Large images ────────────────────────────────────────────────────────────
   describe('large images', () => {
+    it('reports images whose intrinsic dimensions are unavailable', () => {
+      const image = document.createElement('img');
+      image.src = '/not-loaded.png';
+      document.body.appendChild(image);
+
+      expect(analyzePerformance().suggestions).toContain(
+        '1 images could not be checked for intrinsic dimensions; verify they load successfully and inspect their source sizes'
+      );
+    });
+
     it('flags images wider than 1920 pixels', () => {
       addImageWithDimensions(2000, 500);
       const issue = analyzePerformance().issues.find(

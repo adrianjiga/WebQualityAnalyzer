@@ -14,6 +14,9 @@ export function analyzePerformance(
   const largeImages = Array.from(images).filter((img) => {
     return img.naturalWidth > settings.imageMaxWidth || img.naturalHeight > settings.imageMaxHeight;
   });
+  const imagesWithUnknownDimensions = Array.from(images).filter(
+    (img) => img.naturalWidth === 0 || img.naturalHeight === 0
+  );
   if (largeImages.length > 0) {
     const firstLarge = largeImages[0];
     issues.push({
@@ -25,6 +28,12 @@ export function analyzePerformance(
     });
     suggestions.push('Optimize large images and use appropriate formats (WebP, AVIF)');
     score -= Math.min(20, largeImages.length * 3);
+  }
+
+  if (imagesWithUnknownDimensions.length > 0) {
+    suggestions.push(
+      `${imagesWithUnknownDimensions.length} images could not be checked for intrinsic dimensions; verify they load successfully and inspect their source sizes`
+    );
   }
 
   // Check for images without loading attribute
