@@ -33,7 +33,7 @@ The analyzers are pure DOM logic with no extension coupling, which is what makes
 
 ```bash
 npm install           # install dependencies
-npm run build         # all three bundles: Chrome, Firefox, and the library
+npm run build         # Chrome, Firefox, browser-global and ESM library bundles, and types
 npm run build:chrome  # Chrome extension only     → dist/chrome/
 npm run build:firefox # Firefox extension only    → dist/firefox/
 npm run build:lib     # injectable library only   → dist/lib/ (bundle + .d.ts)
@@ -42,6 +42,8 @@ npm run dev:firefox   # watch mode (Firefox)
 npm run lint          # ESLint
 npm test              # Jest test suite (with coverage)
 ```
+
+For manual Chrome and Firefox extension checks, use [BROWSER_SMOKE_TEST.md](BROWSER_SMOKE_TEST.md). CI also validates the built manifests and expected extension/package outputs.
 
 > **After changing anything under `src/content/analyzers/`, `src/content/analyze.ts`, `src/content/utils.ts`, `src/shared/settings.ts`, or `src/index.ts`, run `npm run build:lib` and commit the result.** `dist/lib/` is committed (see [Use as a library](#use-as-a-library)) and CI fails if it is stale.
 
@@ -78,6 +80,16 @@ npm i -D github:adrianjiga/WebQualityAnalyzer
 ```
 
 The bundle is **committed to the repository**, so a git dependency works with no build step on install.
+
+In a browser environment with a live DOM, the package root provides named ESM exports:
+
+```js
+import { analyzePage } from 'webqualityanalyzer';
+
+const result = analyzePage();
+```
+
+For script injection without module loading, use the `webqualityanalyzer/wqa.js` IIFE entry shown below.
 
 ### Playwright
 
@@ -181,7 +193,7 @@ The extension requests `activeTab` for user-invoked access to the current tab an
 
 | Workflow | Triggers | Steps |
 |----------|----------|-------|
-| CI | push (all branches), PR → main | lint, build, verify the committed library bundle is current |
+| CI | push (all branches), PR → main | lint, build, package consumer checks, extension output checks, verify committed library artifacts |
 | Tests | push (all branches), PR → main | Jest with coverage |
 
 The bundle check rebuilds `dist/lib/` and fails if anything differs from the commit — modified files *or* a newly emitted file that was never added — so a committed artifact can never silently drift from the source it was built from.
