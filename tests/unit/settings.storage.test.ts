@@ -64,11 +64,25 @@ describe('loadSettings', () => {
 
     expect(result.accessibility.enabled).toBe(DEFAULT_SETTINGS.accessibility.enabled);
     expect(result.accessibility.missingAltDeduction).toBe(DEFAULT_SETTINGS.accessibility.missingAltDeduction);
-    expect(result.accessibility.missingAltCap).toBe(-5);
+    expect(result.accessibility.missingAltCap).toBe(0);
     expect(result.accessibility.unlabelledInputDeduction).toBe(DEFAULT_SETTINGS.accessibility.unlabelledInputDeduction);
     expect(result.accessibility.headingHierarchyDeduction).toBe(12);
     expect(result.seo).toEqual(DEFAULT_SETTINGS.seo);
     expect(result.performance).toEqual(DEFAULT_SETTINGS.performance);
+  });
+
+  it('clamps persisted numeric settings to their supported ranges', async () => {
+    storageGet.mockResolvedValue({
+      [STORAGE_KEY]: {
+        accessibility: { missingAltDeduction: 1000 },
+        performance: { imageMaxWidth: -10 },
+      },
+    });
+
+    const result = await loadSettings();
+
+    expect(result.accessibility.missingAltDeduction).toBe(25);
+    expect(result.performance.imageMaxWidth).toBe(1);
   });
 });
 

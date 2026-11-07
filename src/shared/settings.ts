@@ -72,6 +72,36 @@ export const DEFAULT_SETTINGS: AnalyzerSettings = {
   },
 };
 
+export const SETTING_LIMITS = {
+  accessibility: {
+    missingAltDeduction: [0, 25],
+    missingAltCap: [0, 100],
+    unlabelledInputDeduction: [0, 25],
+    unlabelledInputCap: [0, 100],
+    headingHierarchyDeduction: [0, 50],
+  },
+  seo: {
+    titleMinLength: [1, 100],
+    titleMaxLength: [1, 200],
+    metaDescMinLength: [1, 300],
+    metaDescMaxLength: [1, 500],
+    noTitleDeduction: [0, 100],
+    noMetaDescDeduction: [0, 100],
+    noH1Deduction: [0, 50],
+    multipleH1Deduction: [0, 50],
+  },
+  performance: {
+    imageMaxWidth: [1, 9999],
+    imageMaxHeight: [1, 9999],
+    lazyLoadThreshold: [0, 50],
+    externalResourcesThreshold: [0, 100],
+    externalResourcesDeductionPerResource: [0, 100],
+    externalResourcesDeductionCap: [0, 100],
+    inlineStylesThreshold: [0, 200],
+    externalLinksDeductionCap: [0, 50],
+  },
+} as const;
+
 Object.freeze(DEFAULT_SETTINGS.accessibility);
 Object.freeze(DEFAULT_SETTINGS.seo);
 Object.freeze(DEFAULT_SETTINGS.performance);

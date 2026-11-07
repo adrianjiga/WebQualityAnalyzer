@@ -4,7 +4,7 @@ import type { AnalysisResult, CategoryResult } from '../content/content';
 import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
 import { loadSettings, saveSettings, resetSettings } from './settings';
-import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
+import { AnalyzerSettings, DEFAULT_SETTINGS, SETTING_LIMITS } from '../shared/settings';
 
 
 let currentAnalysis: AnalysisResult | null = null;
@@ -273,8 +273,12 @@ export function populateSettingsUI(settings: AnalyzerSettings): void {
 
 export function collectSettings(): AnalyzerSettings {
   const num = (id: string, fallback: number): number => {
-    const val = parseInt((document.getElementById(id) as HTMLInputElement).value, 10);
-    return Number.isNaN(val) ? fallback : val;
+    const input = document.getElementById(id) as HTMLInputElement;
+    const val = Number(input.value);
+    if (!Number.isFinite(val) || input.value.trim() === '') return fallback;
+    const min = input.min === '' ? Number.NEGATIVE_INFINITY : Number(input.min);
+    const max = input.max === '' ? Number.POSITIVE_INFINITY : Number(input.max);
+    return Math.min(max, Math.max(min, Math.trunc(val)));
   };
   const bool = (id: string): boolean =>
     (document.getElementById(id) as HTMLInputElement).checked;
@@ -316,11 +320,23 @@ export function collectSettings(): AnalyzerSettings {
 }
 
 function sanitizeSettings(settings: AnalyzerSettings): AnalyzerSettings {
+  for (const categoryName of Object.keys(SETTING_LIMITS) as Array<keyof AnalyzerSettings>) {
+    const category = settings[categoryName] as unknown as Record<string, unknown>;
+    const limits = SETTING_LIMITS[categoryName] as Record<string, readonly [number, number]>;
+    for (const [key, [min, max]] of Object.entries(limits)) {
+      const value = category[key];
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        category[key] = Math.min(max, Math.max(min, value));
+      }
+    }
+  }
   if (settings.seo.titleMaxLength <= settings.seo.titleMinLength) {
-    settings.seo.titleMaxLength = settings.seo.titleMinLength + 1;
+    settings.seo.titleMaxLength = Math.min(200, settings.seo.titleMinLength + 1);
+    settings.seo.titleMinLength = Math.min(settings.seo.titleMinLength, settings.seo.titleMaxLength - 1);
   }
   if (settings.seo.metaDescMaxLength <= settings.seo.metaDescMinLength) {
-    settings.seo.metaDescMaxLength = settings.seo.metaDescMinLength + 1;
+    settings.seo.metaDescMaxLength = Math.min(500, settings.seo.metaDescMinLength + 1);
+    settings.seo.metaDescMinLength = Math.min(settings.seo.metaDescMinLength, settings.seo.metaDescMaxLength - 1);
   }
   return settings;
 }

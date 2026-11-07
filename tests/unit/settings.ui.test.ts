@@ -130,6 +130,17 @@ describe('collectSettings', () => {
     const result = collectSettings();
     expect(result.seo.metaDescMaxLength).toBe(201);
   });
+
+  it('clamps numeric input values to their declared bounds', () => {
+    populateSettingsUI(DEFAULT_SETTINGS);
+    (document.getElementById('settings-a11y-missingAltDeduction') as HTMLInputElement).value = '-9';
+    (document.getElementById('settings-perf-imageMaxWidth') as HTMLInputElement).value = '20000';
+
+    const result = collectSettings();
+
+    expect(result.accessibility.missingAltDeduction).toBe(0);
+    expect(result.performance.imageMaxWidth).toBe(9999);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
