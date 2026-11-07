@@ -194,6 +194,25 @@ describe('runAnalysis', () => {
     );
   });
 
+  it('does not retain or export a previous result after a later failure', async () => {
+    (chrome.tabs.query as jest.Mock)
+      .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
+      .mockResolvedValueOnce([{ id: 2, url: 'https://example.com/second' }]);
+    (chrome.tabs.sendMessage as jest.Mock)
+      .mockResolvedValueOnce(MOCK_RESULT)
+      .mockRejectedValueOnce(new Error('No content script'));
+
+    await runAnalysis();
+    await runAnalysis();
+
+    document.getElementById('export-btn')?.dispatchEvent(new MouseEvent('click'));
+
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
+  });
+
   it('re-enables the analyze button even after an error', async () => {
     (chrome.tabs.query as jest.Mock).mockRejectedValueOnce(new Error('fail'));
 

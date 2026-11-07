@@ -50,6 +50,7 @@ export async function runAnalysis(): Promise<void> {
     'export-btn'
   ) as HTMLButtonElement;
 
+  currentAnalysis = null;
   analyzeButton.disabled = true;
   analyzeButton.textContent = 'Analyzing...';
   exportButton.disabled = true;
