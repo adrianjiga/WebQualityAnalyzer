@@ -101,36 +101,8 @@ export default (env) => {
       path: outDir,
       filename: '[name].bundle.js',
     },
-    module: {
-      rules: [
-        {
-          test: /\.ts$/,
-          exclude: /node_modules/,
-          use: 'ts-loader',
-        },
-        {
-          test: /\.js$/,
-          exclude: /node_modules/,
-          use: {
-            loader: 'babel-loader',
-            options: {
-              presets: ['@babel/preset-env'],
-            },
-          },
-        },
-        {
-          test: /\.css$/,
-          use: ['style-loader', 'css-loader'],
-        },
-        {
-          test: /\.(png|jpg|jpeg|gif)$/i,
-          type: 'asset/resource',
-        },
-      ],
-    },
-    resolve: {
-      extensions: ['.ts', '.js'],
-    },
+    module: moduleRules,
+    resolve: { extensions: ['.ts', '.js'] },
     plugins: [
       new CopyWebpackPlugin({
         patterns: [
