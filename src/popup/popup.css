@@ -418,6 +418,10 @@ details[open] > .settings-section-header::before {
 .settings-toggle input:checked + .settings-toggle-slider {
   background: #0070f3;
 }
+.settings-toggle input:focus-visible + .settings-toggle-slider {
+  outline: 2px solid #0a2540;
+  outline-offset: 3px;
+}
 .settings-toggle input:checked + .settings-toggle-slider::before {
   transform: translateX(16px);
 }
