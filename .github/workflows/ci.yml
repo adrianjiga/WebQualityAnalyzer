@@ -30,6 +30,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify package runtime and TypeScript consumer entries
+        run: |
+          node tests/package-smoke.mjs
+          npx tsc --noEmit --strict --skipLibCheck --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,DOM tests/package-consumer.mts
+
       # dist/lib/ (the bundle and its .d.ts files) is committed so consumers can depend on this
       # repo as a git dependency without running a build. A committed artifact drifts from its
       # source the first time someone edits an analyzer and forgets to rebuild — and it fails
