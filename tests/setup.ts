@@ -16,6 +16,9 @@ const chromeMock = {
     query: jest.fn(),
     sendMessage: jest.fn(),
   },
+  scripting: {
+    executeScript: jest.fn(),
+  },
   storage: {
     local: {
       get: jest.fn(),

@@ -93,6 +93,7 @@ describe('runAnalysis', () => {
     setupPopupDOM();
     jest.clearAllMocks();
     (chrome.storage.local.get as jest.Mock).mockResolvedValue({});
+    (chrome.scripting.executeScript as jest.Mock).mockResolvedValue([]);
     global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock');
     global.URL.revokeObjectURL = jest.fn();
     jest
@@ -130,6 +131,41 @@ describe('runAnalysis', () => {
       action: 'analyze',
       settings: expect.any(Object),
     });
+  });
+
+  it('injects the content script into the active tab before messaging it', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 42, url: 'https://example.com' },
+    ]);
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+
+    await runAnalysis();
+
+    expect(chrome.scripting.executeScript).toHaveBeenCalledWith({
+      target: { tabId: 42 },
+      files: ['content.bundle.js'],
+    });
+    expect(
+      (chrome.scripting.executeScript as jest.Mock).mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      (chrome.tabs.sendMessage as jest.Mock).mock.invocationCallOrder[0]
+    );
+  });
+
+  it('shows an error without messaging when the page cannot be injected', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 1, url: 'chrome://extensions' },
+    ]);
+    (chrome.scripting.executeScript as jest.Mock).mockRejectedValueOnce(
+      new Error('Cannot access a chrome:// URL')
+    );
+
+    await runAnalysis();
+
+    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'Could not analyze page'
+    );
   });
 
   it('displays the overall score after a successful analysis', async () => {

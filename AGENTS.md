@@ -70,9 +70,11 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 
 ### Communication Flow
 
-Popup → (`browser.tabs.sendMessage` with `{ action: 'analyze', settings: AnalyzerSettings }`) → Content Script → returns `AnalysisResult` → Popup renders
+Popup → (`browser.scripting.executeScript` injects `content.bundle.js` into the active tab) → (`browser.tabs.sendMessage` with `{ action: 'analyze', settings: AnalyzerSettings }`) → Content Script → returns `AnalysisResult` → Popup renders
 
 The popup reads settings from `browser.storage.local` before each analysis and sends them in the message payload. The content script validates messages and settings at runtime, uses defaults for missing or malformed settings, and discards settings after each analysis.
+
+There is no manifest `content_scripts` entry: `activeTab` + `scripting` inject on demand, so the extension never runs on a page the user has not clicked Analyze on. Re-injection on a second click is expected — `content.ts` guards its listener registration with a `globalThis` flag. `tests/extension-build-smoke.mjs` fails if either manifest regains `content_scripts` or `host_permissions`. The listener also ignores any message whose `sender.id` is not this extension's.
 
 ### Key Interfaces (defined in `src/content/types.ts`, re-exported from `src/content/content.ts`)
 

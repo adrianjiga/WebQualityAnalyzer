@@ -101,6 +101,11 @@ export async function runAnalysis(): Promise<void> {
       // Update page info
       updatePageInfo(tab.url);
 
+      await browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.bundle.js'],
+      });
+
       // Send message to content script
       const settings = await loadSettings();
       const rawResponse: unknown = await browser.tabs.sendMessage(tab.id, {

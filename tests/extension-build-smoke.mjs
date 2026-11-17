@@ -13,6 +13,14 @@ for (const browser of ['chrome', 'firefox']) {
   if (!Array.isArray(manifest.permissions) || !manifest.permissions.includes('storage')) {
     throw new Error(`${browser} manifest is missing storage permission`);
   }
+  if (!manifest.permissions.includes('scripting')) {
+    throw new Error(`${browser} manifest is missing scripting permission`);
+  }
+  if (manifest.content_scripts || manifest.host_permissions) {
+    throw new Error(
+      `${browser} manifest must inject on demand, not request site access`
+    );
+  }
   const backgroundScripts = manifest.background?.service_worker
     ? [manifest.background.service_worker]
     : manifest.background?.scripts;

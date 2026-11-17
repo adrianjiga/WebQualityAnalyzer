@@ -187,7 +187,7 @@ Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are defined in `src/c
 
 Webpack selects the correct manifest via `--env browser=chrome|firefox` and writes the build to `dist/chrome/` or `dist/firefox/`.
 
-The extension requests `activeTab` for user-invoked access to the current tab and `storage` for analyzer settings. Its content script matches `<all_urls>` so it can analyze pages without a separate injection step; this grants broad site access and should be considered when installing the extension. The `tabs` permission is omitted because the extension only queries the active tab, and matching page permissions cover the tab metadata it reads for supported pages.
+The extension requests `activeTab` for user-invoked access to the current tab, `scripting` to inject the content script into that tab when **Analyze Page** is clicked, and `storage` for analyzer settings. It declares no `content_scripts` and no host permissions, so it runs nothing on a page until the user asks for an analysis. The `tabs` permission is omitted because `activeTab` already exposes the active tab's URL once the popup is opened.
 
 ## CI
 

@@ -93,6 +93,18 @@ describe('Chrome message listener', () => {
     expect(typeof capturedMessageListener).toBe('function');
   });
 
+  it('does not register a second listener when the script is injected again', () => {
+    const addListener = chrome.runtime.onMessage.addListener as jest.Mock;
+    const callsBefore = addListener.mock.calls.length;
+
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('../../src/content/content');
+    });
+
+    expect(addListener.mock.calls.length).toBe(callsBefore);
+  });
+
   it('returns a Promise resolving to a full AnalysisResult when action is "analyze"', async () => {
     const result = capturedMessageListener(
       { action: 'analyze' },

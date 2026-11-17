@@ -6,8 +6,17 @@ import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
 export type { AnalysisResult, CategoryResult, Issue } from './types';
 export { performQualityAnalysis } from './analyze';
 
+const scope = globalThis as typeof globalThis & {
+  __webQualityAnalyzerListening?: boolean;
+};
+
 // Listen for messages from popup
-browser.runtime.onMessage.addListener((request: unknown) => {
+if (!scope.__webQualityAnalyzerListening) {
+  scope.__webQualityAnalyzerListening = true;
+  browser.runtime.onMessage.addListener(handleMessage);
+}
+
+function handleMessage(request: unknown): Promise<unknown> | undefined {
   if (!request || typeof request !== 'object' || Array.isArray(request)) {
     return undefined;
   }
@@ -20,7 +29,7 @@ browser.runtime.onMessage.addListener((request: unknown) => {
     return Promise.resolve(performQualityAnalysis(settings));
   }
   return undefined;
-});
+}
 
 function isAnalyzerSettings(value: unknown): value is AnalyzerSettings {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
