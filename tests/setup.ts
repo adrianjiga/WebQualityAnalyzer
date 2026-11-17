@@ -1,20 +1,19 @@
 import '@testing-library/jest-dom';
 
 // Mock Chrome extension APIs globally so all test files can safely import
-// modules that call chrome.* at load time (e.g. content.ts registers a
-// chrome.runtime.onMessage listener the moment it is imported).
+// modules that call chrome.* at load time (e.g. background.ts registers a
+// chrome.runtime.onInstalled listener the moment it is imported).
 const chromeMock = {
   runtime: {
-    onMessage: {
-      addListener: jest.fn(),
-    },
     onInstalled: {
       addListener: jest.fn(),
     },
   },
   tabs: {
     query: jest.fn(),
-    sendMessage: jest.fn(),
+  },
+  scripting: {
+    executeScript: jest.fn(),
   },
   storage: {
     local: {

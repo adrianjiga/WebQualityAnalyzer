@@ -167,4 +167,11 @@ describe('showError', () => {
       document.getElementById('overview-tab')?.textContent
     ).toContain('Custom error message here');
   });
+
+  it('renders markup in the message as text instead of HTML', () => {
+    showError('<img src=x onerror="alert(1)">');
+    const overview = document.getElementById('overview-tab');
+    expect(overview?.querySelector('img')).toBeNull();
+    expect(overview?.textContent).toContain('<img src=x onerror="alert(1)">');
+  });
 });

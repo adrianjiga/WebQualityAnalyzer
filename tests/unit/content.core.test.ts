@@ -1,19 +1,9 @@
-import { performQualityAnalysis } from '../../src/content/content';
+import {
+  analyzeWithSettings,
+  performQualityAnalysis,
+} from '../../src/content/content';
+import { ANALYZER_GLOBAL, InjectedAnalyzer } from '../../src/shared/injection';
 import { getCssSelector, getHtmlSnippet } from '../../src/content/utils';
-
-// ─── Message-listener capture ─────────────────────────────────────────────────
-type MessageListener = (
-  request: unknown,
-  sender: chrome.runtime.MessageSender
-) => Promise<unknown> | undefined;
-
-let capturedMessageListener: MessageListener;
-
-beforeAll(() => {
-  capturedMessageListener = (
-    chrome.runtime.onMessage.addListener as jest.Mock
-  ).mock.calls[0][0] as MessageListener;
-});
 
 beforeEach(() => {
   document.head.replaceChildren();
@@ -86,53 +76,65 @@ describe('performQualityAnalysis', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Chrome message listener
+// Injected analyzer
 // ══════════════════════════════════════════════════════════════════════════════
-describe('Chrome message listener', () => {
-  it('is registered on module load (captured listener is a function)', () => {
-    expect(typeof capturedMessageListener).toBe('function');
+describe('injected analyzer', () => {
+  const injected = (): InjectedAnalyzer =>
+    (globalThis as unknown as Record<string, InjectedAnalyzer>)[
+      ANALYZER_GLOBAL
+    ];
+
+  it('exposes analyzeWithSettings on the global the popup calls', () => {
+    expect(injected().analyze).toBe(analyzeWithSettings);
   });
 
-  it('returns a Promise resolving to a full AnalysisResult when action is "analyze"', async () => {
-    const result = capturedMessageListener(
-      { action: 'analyze' },
-      {} as chrome.runtime.MessageSender
-    );
-    expect(result).toBeInstanceOf(Promise);
-    const response = (await result) as ReturnType<typeof performQualityAnalysis>;
-    expect(response).toHaveProperty('score');
-    expect(response).toHaveProperty('pageInfo');
-    expect(response).toHaveProperty('categories');
+  it('returns a full AnalysisResult for valid settings', () => {
+    const result = injected().analyze(DEFAULT_SETTINGS);
+    expect(result).toHaveProperty('score');
+    expect(result).toHaveProperty('pageInfo');
+    expect(result).toHaveProperty('categories');
   });
 
-  it('returns undefined for unknown action types', () => {
-    const result = capturedMessageListener(
-      { action: 'unknown-action' },
-      {} as chrome.runtime.MessageSender
-    );
-    expect(result).toBeUndefined();
+  it('applies the settings it is given', () => {
+    const result = analyzeWithSettings({
+      ...DEFAULT_SETTINGS,
+      seo: { ...DEFAULT_SETTINGS.seo, enabled: false },
+    });
+    expect(result.categories.seo).toEqual({
+      score: 100,
+      issues: [],
+      suggestions: [],
+    });
   });
 
-  it.each([null, undefined, 'analyze', 12, [], {}])(
-    'ignores malformed message payload %p',
-    (request) => {
-      expect(() =>
-        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
-      ).not.toThrow();
-      expect(
-        capturedMessageListener(request, {} as chrome.runtime.MessageSender)
-      ).toBeUndefined();
+  it.each([null, undefined, 'analyze', 12, [], {}, { accessibility: null }])(
+    'falls back to default settings for malformed settings %p',
+    (settings) => {
+      expect(analyzeWithSettings(settings)).toEqual(
+        expect.objectContaining({
+          categories: analyzeWithSettings(DEFAULT_SETTINGS).categories,
+        })
+      );
     }
   );
 
-  it('falls back to defaults when an analyze message has malformed settings', async () => {
-    const result = capturedMessageListener(
-      { action: 'analyze', settings: { accessibility: null } },
-      {} as chrome.runtime.MessageSender
-    );
+  it('cannot be shadowed by a page element named after the global', () => {
+    const scope = globalThis as unknown as Record<string, unknown>;
+    delete scope[ANALYZER_GLOBAL];
+    const decoy = document.createElement('div');
+    decoy.id = ANALYZER_GLOBAL;
+    document.body.appendChild(decoy);
+    expect(scope[ANALYZER_GLOBAL]).toBe(decoy);
 
-    expect(result).toBeInstanceOf(Promise);
-    await expect(result).resolves.toHaveProperty('categories');
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('../../src/content/content');
+    });
+
+    expect(Object.prototype.hasOwnProperty.call(scope, ANALYZER_GLOBAL)).toBe(
+      true
+    );
+    expect(typeof injected().analyze).toBe('function');
   });
 });
 

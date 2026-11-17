@@ -24,9 +24,9 @@ const EMPTY_CATEGORY = {
  * Runs every enabled analyzer against the current `document` and folds the three category
  * results into one overall score.
  *
- * This lives apart from `content.ts` deliberately. `content.ts` registers a
- * `browser.runtime.onMessage` listener at module scope, so importing it outside the extension
- * drags in `webextension-polyfill` and fires that side effect. The analysis itself needs
+ * This lives apart from `content.ts` deliberately. `content.ts` assigns the injected
+ * analyzer to `globalThis` at module scope, so importing it outside the extension fires
+ * that side effect. The analysis itself needs
  * nothing but a DOM — keeping it in its own module is what lets the library entry
  * (`src/index.ts`) expose it to any caller with a page: a test runner, a CI script, a
  * headless browser.
