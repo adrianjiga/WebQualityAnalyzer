@@ -59,4 +59,23 @@ for (const browser of ['chrome', 'firefox']) {
   ]) {
     await access(join(outputDirectory, file));
   }
+
+  const popupBundle = await readFile(
+    join(outputDirectory, 'popup.bundle.js'),
+    'utf8'
+  );
+  const injectedFiles = new Set(
+    Array.from(
+      popupBundle.matchAll(/['"`]([\w.-]+\.bundle\.js)['"`]/g),
+      ([, file]) => file
+    )
+  );
+  if (injectedFiles.size === 0) {
+    throw new Error(`${browser} popup bundle references no script to inject`);
+  }
+  for (const file of injectedFiles) {
+    await access(join(outputDirectory, file)).catch(() => {
+      throw new Error(`${browser} popup injects ${file}, which was not built`);
+    });
+  }
 }
