@@ -32,6 +32,8 @@ for (const browser of ['chrome', 'firefox']) {
     ['script-src', "'self'"],
     ['object-src', "'none'"],
     ['base-uri', "'none'"],
+    ['form-action', "'none'"],
+    ['frame-ancestors', "'none'"],
   ]) {
     if (csp.get(name) !== sources) {
       throw new Error(`${browser} manifest CSP must set ${name} ${sources}`);
