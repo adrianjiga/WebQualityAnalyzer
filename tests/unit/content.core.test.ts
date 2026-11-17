@@ -122,15 +122,19 @@ describe('injected analyzer', () => {
   });
 
   it('cannot be shadowed by a page element named after the global', () => {
+    const scope = globalThis as unknown as Record<string, unknown>;
+    delete scope[ANALYZER_GLOBAL];
     const decoy = document.createElement('div');
     decoy.id = ANALYZER_GLOBAL;
     document.body.appendChild(decoy);
+    expect(scope[ANALYZER_GLOBAL]).toBe(decoy);
 
     jest.isolateModules(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('../../src/content/content');
     });
 
+    expect(Object.prototype.hasOwnProperty.call(scope, ANALYZER_GLOBAL)).toBe(true);
     expect(typeof injected().analyze).toBe('function');
   });
 });
