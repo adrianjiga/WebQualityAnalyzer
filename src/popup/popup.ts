@@ -202,7 +202,7 @@ export function showError(message: string): void {
   overviewTab.innerHTML = `
     <div class="empty-state">
       <div style="color: #dc2626; margin-bottom: 10px;">❌ Error</div>
-      <div>${message}</div>
+      <div>${escapeHtml(message)}</div>
     </div>
   `;
 }
