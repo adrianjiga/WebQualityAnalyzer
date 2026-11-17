@@ -21,6 +21,12 @@ for (const browser of ['chrome', 'firefox']) {
       `${browser} manifest must inject on demand, not request site access`
     );
   }
+  const csp = manifest.content_security_policy?.extension_pages ?? '';
+  for (const directive of ["script-src 'self'", "object-src 'none'"]) {
+    if (!csp.includes(directive)) {
+      throw new Error(`${browser} manifest CSP is missing ${directive}`);
+    }
+  }
   const backgroundScripts = manifest.background?.service_worker
     ? [manifest.background.service_worker]
     : manifest.background?.scripts;
