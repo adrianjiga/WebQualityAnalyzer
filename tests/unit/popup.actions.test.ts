@@ -192,16 +192,22 @@ describe('runAnalysis', () => {
     }
   });
 
-  it('shows a compatibility error when the analyzer returns no result', async () => {
+  it.each([
+    ['no injection result', []],
+    ['an undefined result', [{ result: undefined }]],
+    ['an error raised in the page', [{ error: new Error('Analyzer threw') }]],
+  ])('shows the generic page error for %s', async (_label, injectionResults) => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
+    analyzerOutcomes.push(() => Promise.resolve(injectionResults));
 
     await runAnalysis();
 
-    expect(document.getElementById('overview-tab')?.textContent).toContain(
-      'analysis response was invalid'
-    );
+    const text = document.getElementById('overview-tab')?.textContent;
+    expect(text).toContain('Could not analyze page');
+    expect(text).not.toContain('Reload the extension');
+    expect(document.getElementById('export-btn')?.hasAttribute('disabled')).toBe(true);
   });
 
   it('shows an error without analyzing when the page cannot be injected', async () => {

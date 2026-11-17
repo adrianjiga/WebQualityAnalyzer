@@ -119,7 +119,14 @@ export async function runAnalysis(): Promise<void> {
         func: runInjectedAnalyzer,
         args: [ANALYZER_GLOBAL, settings],
       });
-      const rawResponse: unknown = injection?.result;
+      if (
+        !injection ||
+        injection.error !== undefined ||
+        injection.result === undefined
+      ) {
+        throw new Error('The analysis did not complete in the page.');
+      }
+      const rawResponse: unknown = injection.result;
       if (!isAnalysisResult(rawResponse)) {
         throw new Error('The page returned an invalid analysis response.');
       }
