@@ -34,9 +34,9 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 | Script                         | Bundle                 | Role                                                         |
 | ------------------------------ | ---------------------- | ------------------------------------------------------------ |
 | `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events                                   |
-| `src/content/content.ts`       | `content.bundle.js`    | Content script — registers the message listener, delegates to `analyze.ts` |
+| `src/content/content.ts`       | `content.bundle.js`    | Content script — exposes the injected analyzer, delegates to `analyze.ts` |
 | `src/index.ts`                 | `dist/lib/wqa.js`, `dist/lib/wqa.mjs` | Library IIFE global and named-export ESM entries |
-| `src/popup/popup.ts`           | `popup.bundle.js`      | Popup UI — sends messages to content script, renders results |
+| `src/popup/popup.ts`           | `popup.bundle.js`      | Popup UI — injects and runs the content script, renders results |
 | `src/shared/browser.ts`        | (extension bundles)    | Re-exports `webextension-polyfill` as `browser.*`. **Not in the library bundle** |
 | `src/shared/settings.ts`       | (imported by all)      | `AnalyzerSettings` interfaces, `DEFAULT_SETTINGS`, `STORAGE_KEY` |
 
@@ -44,8 +44,8 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 
 `src/content/` is split into focused modules:
 
-- `content.ts` — thin orchestrator: registers `onMessage` listener, delegates to `analyze.ts`, re-exports types
-- `analyze.ts` — `performQualityAnalysis`: runs the enabled analyzers and folds the scores. **Deliberately separate from `content.ts`**, which registers a `browser.runtime.onMessage` listener at module scope — importing that outside the extension drags in `webextension-polyfill` and fires the side effect. Keeping the analysis here is what lets `src/index.ts` expose it to any caller with a DOM
+- `content.ts` — thin orchestrator: validates settings, exposes `analyzeWithSettings` on `globalThis[ANALYZER_GLOBAL]`, delegates to `analyze.ts`, re-exports types
+- `analyze.ts` — `performQualityAnalysis`: runs the enabled analyzers and folds the scores. **Deliberately separate from `content.ts`**, which assigns the injected analyzer to `globalThis` at module scope — importing that outside the extension fires the side effect. Keeping the analysis here is what lets `src/index.ts` expose it to any caller with a DOM
 - `types.ts` — `AnalysisResult`, `CategoryResult`, `Issue` interface definitions
 - `utils.ts` — `getCssSelector` and `getHtmlSnippet` DOM helpers used by analyzers
 - `analyzers/accessibility.ts` — missing alt text, unlabelled inputs, heading hierarchy
@@ -67,14 +67,15 @@ WebQualityAnalyzer ships **two products from one source tree**: a Chrome and Fir
 
 - `browser.ts` — re-exports `webextension-polyfill` as `browser.*`
 - `settings.ts` — analyzer settings interfaces, frozen `DEFAULT_SETTINGS`, numeric `SETTING_LIMITS`, and `STORAGE_KEY`
+- `injection.ts` — `CONTENT_SCRIPT_FILE`, `ANALYZER_GLOBAL`, and the `InjectedAnalyzer` interface shared by the popup and the content script
 
 ### Communication Flow
 
-Popup → (`browser.scripting.executeScript` injects `content.bundle.js` into the active tab) → (`browser.tabs.sendMessage` with `{ action: 'analyze', settings: AnalyzerSettings }`) → Content Script → returns `AnalysisResult` → Popup renders
+Popup → `browser.scripting.executeScript({ files: ['content.bundle.js'] })` → second `executeScript({ func, args: [ANALYZER_GLOBAL, settings] })` calls `globalThis[ANALYZER_GLOBAL].analyze(settings)` in the page → `AnalysisResult` comes back as the injection result → Popup renders
 
-The popup reads settings from `browser.storage.local` before each analysis and sends them in the message payload. The content script validates messages and settings at runtime, uses defaults for missing or malformed settings, and discards settings after each analysis.
+The popup reads settings from `browser.storage.local` (in parallel with the first injection) and passes them as the function argument. The content script validates settings at runtime, uses defaults for missing or malformed settings, and discards settings after each analysis.
 
-There is no manifest `content_scripts` entry: `activeTab` + `scripting` inject on demand, so the extension never runs on a page the user has not clicked Analyze on. Re-injection on a second click is expected — `content.ts` guards its listener registration with a `globalThis` flag. `tests/extension-build-smoke.mjs` fails if either manifest regains `content_scripts` or `host_permissions`. The listener also ignores any message whose `sender.id` is not this extension's.
+There is no manifest `content_scripts` entry: `activeTab` + `scripting` inject on demand, so the extension never runs on a page the user has not clicked Analyze on. There is deliberately **no message listener**: a persistent listener outlives an extension reload in Chrome, and any "already registered" guard flag on `globalThis` can be faked by a page element whose `id` matches (named element access works in the isolated world too). Every click re-injects the bundle, which overwrites the global with a real own property that a named element cannot shadow. The injected `func` is serialized without its module, so it must not reference imports — the global's name is passed in `args`. `tests/extension-build-smoke.mjs` fails if either manifest regains `content_scripts` or `host_permissions`.
 
 ### Key Interfaces (defined in `src/content/types.ts`, re-exported from `src/content/content.ts`)
 
@@ -141,7 +142,7 @@ The library bundle is **not minified** (`mode: 'none'`). It is injected into a l
 
 All extension API calls use `browser.*` imported from `src/shared/browser.ts`, which re-exports `webextension-polyfill`. This provides a unified Promise-based API across Chrome and Firefox — no `chrome.*` calls appear in source files directly.
 
-The `onMessage` listener in `content.ts` returns a `Promise` (polyfill pattern) rather than using the `sendResponse` callback.
+`content.ts` does not use `browser.*` at all, so the content bundle does not include `webextension-polyfill`.
 
 ## Code Quality
 
@@ -167,7 +168,7 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 
 | File                                       | What it covers                                                                                                      |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `tests/unit/content.core.test.ts`          | `performQualityAnalysis`, `browser.runtime.onMessage` listener, `getCssSelector`, `getHtmlSnippet`                 |
+| `tests/unit/content.core.test.ts`          | `performQualityAnalysis`, injected analyzer (settings fallback, not shadowed by a named element), `getCssSelector`, `getHtmlSnippet` |
 | `tests/unit/index.test.ts`                 | Library entry — `analyzePage` (defaults, per-category disable, partial-override merge, no `DEFAULT_SETTINGS` mutation) and `collectIssues` (category tagging, empty for a clean page) |
 | `tests/unit/content.accessibility.test.ts` | `analyzeAccessibility` — all accessibility checks                                                                   |
 | `tests/unit/content.seo.test.ts`           | `analyzeSEO` — all SEO checks                                                                                       |
@@ -191,8 +192,8 @@ Chrome extension APIs (`chrome.*`) are mocked globally in `tests/setup.ts` (load
 
 ### Key patterns
 
-- **Module load-time side effects** (background.ts, content.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
-- **onMessage listener signature**: the listener validates `{ action: 'analyze', settings? }`, uses defaults for malformed settings, and returns a promise; test by awaiting the listener result, not by checking a `sendResponse` callback.
+- **Module load-time side effects** (background.ts): capture the registered listener in `beforeAll` before any `jest.clearAllMocks()` in `beforeEach` wipes it. For background.ts use `jest.isolateModules` + `require()` to get a fresh execution per test — suppress the lint rule with `// eslint-disable-next-line @typescript-eslint/no-require-imports` on that line.
+- **Injected analysis in popup tests**: `chrome.scripting.executeScript` is called twice per analysis — once with `files`, once with `func`. `popup.actions.test.ts` routes the `func` call through a queue (`mockAnalysisResponse` / `mockAnalysisRejection`) and resolves the `files` call with `[]`.
 - **Settings storage in tests**: `chrome.storage.local.get` must be mocked with `.mockResolvedValue({})` in `beforeEach` for any test that triggers `loadSettings()` (including `runAnalysis` tests). `jest.clearAllMocks()` wipes return values, so set the mock after clearing.
 - **Settings UI auto-save**: number inputs fire `saveSettings` on the `change` event; toggle checkboxes fire it on `change` too (plus update the `.disabled` class on the section body). The reset button is async — flush with `await new Promise(resolve => setTimeout(resolve, 0))` to wait for the full chain before asserting.
 - **"Perfect Score!" condition**: `displayCategoryContent` shows it only when `issues.length === 0 && suggestions.length === 0`. Performance generic suggestions are only emitted when `score < 100`, so all three category tabs can reach this state.

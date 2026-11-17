@@ -165,16 +165,16 @@ Four Webpack bundles from one source tree — three extension contexts plus the 
 | Source | Bundle | Role |
 |--------|--------|------|
 | `src/background/background.ts` | `background.bundle.js` | Extension lifecycle events |
-| `src/content/content.ts` | `content.bundle.js` | Registers the message listener, delegates to `analyze.ts` |
-| `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — sends messages to content script, renders results |
+| `src/content/content.ts` | `content.bundle.js` | Exposes the injected analyzer, delegates to `analyze.ts` |
+| `src/popup/popup.ts` | `popup.bundle.js` | Popup UI — injects and runs the content script, renders results |
 | `src/index.ts` | `dist/lib/wqa.js` | Library entry — the same analyzers, no extension dependency |
 | `src/shared/browser.ts` | (imported by extension bundles) | Re-exports `webextension-polyfill` for unified `browser.*` API |
 
-**Communication flow:** Popup → `browser.tabs.sendMessage` → Content Script → `AnalysisResult` → Popup renders
+**Communication flow:** Popup → `browser.scripting.executeScript` injects `content.bundle.js`, then runs the analyzer it exposes → `AnalysisResult` returned as the injection result → Popup renders
 
-`src/content/` is split into focused modules: `analyze.ts` (`performQualityAnalysis`), `types.ts` (interfaces), `utils.ts` (`getCssSelector`, `getHtmlSnippet`), and `analyzers/` (one file per category). `src/popup/` is split into `popup.ts`, `popup.css`, `utils.ts`, and `settings.ts` (storage load/save/reset). `src/shared/` holds `browser.ts` and `settings.ts` (shared types and defaults used by both popup and content bundles).
+`src/content/` is split into focused modules: `analyze.ts` (`performQualityAnalysis`), `types.ts` (interfaces), `utils.ts` (`getCssSelector`, `getHtmlSnippet`), and `analyzers/` (one file per category). `src/popup/` is split into `popup.ts`, `popup.css`, `utils.ts`, and `settings.ts` (storage load/save/reset). `src/shared/` holds `browser.ts`, `settings.ts` (shared types and defaults used by both popup and content bundles), and `injection.ts` (the bundle file name and global name the popup and content script agree on).
 
-**`analyze.ts` is separate from `content.ts` on purpose.** `content.ts` registers a `browser.runtime.onMessage` listener at module scope, so importing it drags in `webextension-polyfill` and fires that side effect. Keeping the analysis in its own module is what lets `src/index.ts` expose it to callers that have a DOM but no extension. `content.ts` re-exports `performQualityAnalysis`, so existing importers are unaffected.
+**`analyze.ts` is separate from `content.ts` on purpose.** `content.ts` assigns the injected analyzer to `globalThis` at module scope, so importing it fires that side effect. Keeping the analysis in its own module is what lets `src/index.ts` expose it to callers that have a DOM but no extension. `content.ts` re-exports `performQualityAnalysis`, so existing importers are unaffected.
 
 Shared types (`AnalysisResult`, `CategoryResult`, `Issue`) are defined in `src/content/types.ts`, re-exported from `content.ts`, and consumed via `import type` in `popup.ts` — erased before bundling, zero runtime overhead.
 

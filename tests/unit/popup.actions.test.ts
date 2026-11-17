@@ -88,12 +88,31 @@ describe('exportResults', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 describe('runAnalysis', () => {
   const MOCK_RESULT = buildResult();
+  const analyzerOutcomes: Array<() => Promise<unknown>> = [];
+
+  const mockAnalysisResponse = (value: unknown): void => {
+    analyzerOutcomes.push(() => Promise.resolve([{ result: value }]));
+  };
+  const mockAnalysisRejection = (error: Error): void => {
+    analyzerOutcomes.push(() => Promise.reject(error));
+  };
+  const analyzerCalls = (): unknown[][] =>
+    (chrome.scripting.executeScript as jest.Mock).mock.calls.filter(
+      ([details]) => 'func' in details
+    );
 
   beforeEach(() => {
     setupPopupDOM();
     jest.clearAllMocks();
     (chrome.storage.local.get as jest.Mock).mockResolvedValue({});
-    (chrome.scripting.executeScript as jest.Mock).mockResolvedValue([]);
+    analyzerOutcomes.length = 0;
+    (chrome.scripting.executeScript as jest.Mock).mockImplementation(
+      (details: { files?: string[] }) => {
+        if (details.files) return Promise.resolve([]);
+        const outcome = analyzerOutcomes.shift();
+        return outcome ? outcome() : Promise.resolve([]);
+      }
+    );
     global.URL.createObjectURL = jest.fn().mockReturnValue('blob:mock');
     global.URL.revokeObjectURL = jest.fn();
     jest
@@ -109,7 +128,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 
@@ -119,40 +138,73 @@ describe('runAnalysis', () => {
     });
   });
 
-  it('sends an "analyze" message to the content script', async () => {
+  it('runs the injected analyzer in the active tab with the stored settings', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 42, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
-
-    await runAnalysis();
-
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-      action: 'analyze',
-      settings: expect.any(Object),
-    });
-  });
-
-  it('injects the content script into the active tab before messaging it', async () => {
-    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
-      { id: 42, url: 'https://example.com' },
-    ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 
     expect(chrome.scripting.executeScript).toHaveBeenCalledWith({
       target: { tabId: 42 },
+      func: expect.any(Function),
+      args: ['__webQualityAnalyzer', expect.any(Object)],
+    });
+  });
+
+  it('injects the content script before running the analyzer', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 42, url: 'https://example.com' },
+    ]);
+    mockAnalysisResponse(MOCK_RESULT);
+
+    await runAnalysis();
+
+    const calls = (chrome.scripting.executeScript as jest.Mock).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[0][0]).toEqual({
+      target: { tabId: 42 },
       files: ['content.bundle.js'],
     });
-    expect(
-      (chrome.scripting.executeScript as jest.Mock).mock.invocationCallOrder[0]
-    ).toBeLessThan(
-      (chrome.tabs.sendMessage as jest.Mock).mock.invocationCallOrder[0]
+    expect(calls[1][0]).toHaveProperty('func');
+  });
+
+  it('calls the analyzer exposed under the given global name', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 42, url: 'https://example.com' },
+    ]);
+    mockAnalysisResponse(MOCK_RESULT);
+    await runAnalysis();
+
+    const [details] = analyzerCalls()[0] as [
+      { func: (name: string, settings: unknown) => unknown },
+    ];
+    const analyze = jest.fn().mockReturnValue('analyzed');
+    const scope = globalThis as Record<string, unknown>;
+    scope.__testAnalyzer = { analyze };
+
+    try {
+      expect(details.func('__testAnalyzer', { seo: {} })).toBe('analyzed');
+      expect(analyze).toHaveBeenCalledWith({ seo: {} });
+    } finally {
+      delete scope.__testAnalyzer;
+    }
+  });
+
+  it('shows a compatibility error when the analyzer returns no result', async () => {
+    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+      { id: 1, url: 'https://example.com' },
+    ]);
+
+    await runAnalysis();
+
+    expect(document.getElementById('overview-tab')?.textContent).toContain(
+      'analysis response was invalid'
     );
   });
 
-  it('shows an error without messaging when the page cannot be injected', async () => {
+  it('shows an error without analyzing when the page cannot be injected', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'chrome://extensions' },
     ]);
@@ -162,7 +214,7 @@ describe('runAnalysis', () => {
 
     await runAnalysis();
 
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(analyzerCalls()).toHaveLength(0);
     expect(document.getElementById('overview-tab')?.textContent).toContain(
       'Could not analyze page'
     );
@@ -172,7 +224,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(
+    mockAnalysisResponse(
       buildResult({ score: 77 })
     );
 
@@ -185,7 +237,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 
@@ -197,7 +249,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 
@@ -209,7 +261,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com/page' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 
@@ -230,13 +282,11 @@ describe('runAnalysis', () => {
     );
   });
 
-  it('shows an error message when chrome.tabs.sendMessage rejects', async () => {
+  it('shows an error message when the injected analyzer fails', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockRejectedValueOnce(
-      new Error('No content script')
-    );
+    mockAnalysisRejection(new Error('Analyzer failed'));
 
     await runAnalysis();
 
@@ -249,7 +299,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce({ score: 'bad' });
+    mockAnalysisResponse({ score: 'bad' });
 
     await runAnalysis();
 
@@ -263,9 +313,8 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock)
       .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
       .mockResolvedValueOnce([{ id: 2, url: 'https://example.com/second' }]);
-    (chrome.tabs.sendMessage as jest.Mock)
-      .mockResolvedValueOnce(MOCK_RESULT)
-      .mockRejectedValueOnce(new Error('No content script'));
+    mockAnalysisResponse(MOCK_RESULT);
+    mockAnalysisRejection(new Error('Analyzer failed'));
 
     await runAnalysis();
     await runAnalysis();
@@ -287,27 +336,27 @@ describe('runAnalysis', () => {
     expect(btn.disabled).toBe(false);
   });
 
-  it('does not send a message when the tab has no id', async () => {
+  it('does not inject when the tab has no id', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { url: 'https://example.com' },
     ]);
 
     await runAnalysis();
 
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(document.getElementById('overview-tab')?.textContent).toContain(
       'Could not analyze page'
     );
   });
 
-  it('does not send a message when the tab has no url', async () => {
+  it('does not inject when the tab has no url', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1 },
     ]);
 
     await runAnalysis();
 
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
+    expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(document.getElementById('overview-tab')?.textContent).toContain(
       'Could not analyze page'
     );
@@ -317,7 +366,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock)
       .mockResolvedValueOnce([{ id: 1, url: 'https://example.com/first' }])
       .mockResolvedValueOnce([{ id: 2 }]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
     await runAnalysis();
@@ -333,7 +382,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce(MOCK_RESULT);
+    mockAnalysisResponse(MOCK_RESULT);
 
     await runAnalysis();
 

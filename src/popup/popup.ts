@@ -5,6 +5,11 @@ import { browser } from '../shared/browser';
 import { escapeHtml, getScoreColor, exportResults } from './utils';
 import { loadSettings, saveSettings, resetSettings } from './settings';
 import { AnalyzerSettings, DEFAULT_SETTINGS, SETTING_LIMITS } from '../shared/settings';
+import {
+  ANALYZER_GLOBAL,
+  CONTENT_SCRIPT_FILE,
+  InjectedAnalyzer,
+} from '../shared/injection';
 
 
 let currentAnalysis: AnalysisResult | null = null;
@@ -101,17 +106,20 @@ export async function runAnalysis(): Promise<void> {
       // Update page info
       updatePageInfo(tab.url);
 
-      await browser.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content.bundle.js'],
+      const target = { tabId: tab.id };
+      const [, settings] = await Promise.all([
+        browser.scripting.executeScript({
+          target,
+          files: [CONTENT_SCRIPT_FILE],
+        }),
+        loadSettings(),
+      ]);
+      const [injection] = await browser.scripting.executeScript({
+        target,
+        func: runInjectedAnalyzer,
+        args: [ANALYZER_GLOBAL, settings],
       });
-
-      // Send message to content script
-      const settings = await loadSettings();
-      const rawResponse: unknown = await browser.tabs.sendMessage(tab.id, {
-        action: 'analyze',
-        settings,
-      });
+      const rawResponse: unknown = injection?.result;
       if (!isAnalysisResult(rawResponse)) {
         throw new Error('The page returned an invalid analysis response.');
       }
@@ -132,6 +140,11 @@ export async function runAnalysis(): Promise<void> {
     analyzeButton.disabled = false;
     analyzeButton.textContent = 'Analyze Page';
   }
+}
+
+function runInjectedAnalyzer(globalName: string, settings: unknown): unknown {
+  const scope = globalThis as unknown as Record<string, InjectedAnalyzer>;
+  return scope[globalName].analyze(settings);
 }
 
 function isAnalysisResult(value: unknown): value is AnalysisResult {

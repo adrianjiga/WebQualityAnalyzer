@@ -1,35 +1,20 @@
 // Content script for WebQualityAnalyzer extension
-import { browser } from '../shared/browser';
 import { performQualityAnalysis } from './analyze';
 import { AnalyzerSettings, DEFAULT_SETTINGS } from '../shared/settings';
+import { ANALYZER_GLOBAL, InjectedAnalyzer } from '../shared/injection';
+import type { AnalysisResult } from './types';
 
 export type { AnalysisResult, CategoryResult, Issue } from './types';
 export { performQualityAnalysis } from './analyze';
 
-const scope = globalThis as typeof globalThis & {
-  __webQualityAnalyzerListening?: boolean;
-};
-
-// Listen for messages from popup
-if (!scope.__webQualityAnalyzerListening) {
-  scope.__webQualityAnalyzerListening = true;
-  browser.runtime.onMessage.addListener(handleMessage);
+export function analyzeWithSettings(settings: unknown): AnalysisResult {
+  return performQualityAnalysis(
+    isAnalyzerSettings(settings) ? settings : DEFAULT_SETTINGS
+  );
 }
 
-function handleMessage(request: unknown): Promise<unknown> | undefined {
-  if (!request || typeof request !== 'object' || Array.isArray(request)) {
-    return undefined;
-  }
-
-  const msg = request as Record<string, unknown>;
-  if (msg.action === 'analyze') {
-    const settings = isAnalyzerSettings(msg.settings)
-      ? msg.settings
-      : DEFAULT_SETTINGS;
-    return Promise.resolve(performQualityAnalysis(settings));
-  }
-  return undefined;
-}
+const analyzer: InjectedAnalyzer = { analyze: analyzeWithSettings };
+(globalThis as Record<string, unknown>)[ANALYZER_GLOBAL] = analyzer;
 
 function isAnalyzerSettings(value: unknown): value is AnalyzerSettings {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
