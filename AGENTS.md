@@ -168,7 +168,7 @@ Actions are pinned to commit SHAs for supply-chain security. Dependabot is confi
 
 | File                                       | What it covers                                                                                                      |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `tests/unit/content.core.test.ts`          | `performQualityAnalysis`, injected analyzer (settings fallback, not shadowed by a named element), `getCssSelector`, `getHtmlSnippet` |
+| `tests/unit/content.core.test.ts`          | `performQualityAnalysis`, injected analyzer global, `getCssSelector`, `getHtmlSnippet`                                                                                                |
 | `tests/unit/index.test.ts`                 | Library entry — `analyzePage` (defaults, per-category disable, partial-override merge, no `DEFAULT_SETTINGS` mutation) and `collectIssues` (category tagging, empty for a clean page) |
 | `tests/unit/content.accessibility.test.ts` | `analyzeAccessibility` — all accessibility checks                                                                   |
 | `tests/unit/content.seo.test.ts`           | `analyzeSEO` — all SEO checks                                                                                       |

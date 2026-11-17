@@ -196,19 +196,24 @@ describe('runAnalysis', () => {
     ['no injection result', []],
     ['an undefined result', [{ result: undefined }]],
     ['an error raised in the page', [{ error: new Error('Analyzer threw') }]],
-  ])('shows the generic page error for %s', async (_label, injectionResults) => {
-    (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
-      { id: 1, url: 'https://example.com' },
-    ]);
-    analyzerOutcomes.push(() => Promise.resolve(injectionResults));
+  ])(
+    'shows the generic page error for %s',
+    async (_label, injectionResults) => {
+      (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
+        { id: 1, url: 'https://example.com' },
+      ]);
+      analyzerOutcomes.push(() => Promise.resolve(injectionResults));
 
-    await runAnalysis();
+      await runAnalysis();
 
-    const text = document.getElementById('overview-tab')?.textContent;
-    expect(text).toContain('Could not analyze page');
-    expect(text).not.toContain('Reload the extension');
-    expect(document.getElementById('export-btn')?.hasAttribute('disabled')).toBe(true);
-  });
+      const text = document.getElementById('overview-tab')?.textContent;
+      expect(text).toContain('Could not analyze page');
+      expect(text).not.toContain('Reload the extension');
+      expect(
+        document.getElementById('export-btn')?.hasAttribute('disabled')
+      ).toBe(true);
+    }
+  );
 
   it('shows an error without analyzing when the page cannot be injected', async () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
@@ -230,9 +235,7 @@ describe('runAnalysis', () => {
     (chrome.tabs.query as jest.Mock).mockResolvedValueOnce([
       { id: 1, url: 'https://example.com' },
     ]);
-    mockAnalysisResponse(
-      buildResult({ score: 77 })
-    );
+    mockAnalysisResponse(buildResult({ score: 77 }));
 
     await runAnalysis();
 

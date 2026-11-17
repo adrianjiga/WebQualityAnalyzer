@@ -41,7 +41,9 @@ for (const browser of ['chrome', 'firefox']) {
   }
   for (const name of ['script-src-elem', 'script-src-attr', 'worker-src']) {
     if (csp.has(name)) {
-      throw new Error(`${browser} manifest CSP must not loosen scripts via ${name}`);
+      throw new Error(
+        `${browser} manifest CSP must not loosen scripts via ${name}`
+      );
     }
   }
   const backgroundScripts = manifest.background?.service_worker

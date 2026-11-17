@@ -80,7 +80,9 @@ describe('performQualityAnalysis', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 describe('injected analyzer', () => {
   const injected = (): InjectedAnalyzer =>
-    (globalThis as unknown as Record<string, InjectedAnalyzer>)[ANALYZER_GLOBAL];
+    (globalThis as unknown as Record<string, InjectedAnalyzer>)[
+      ANALYZER_GLOBAL
+    ];
 
   it('exposes analyzeWithSettings on the global the popup calls', () => {
     expect(injected().analyze).toBe(analyzeWithSettings);
@@ -105,21 +107,16 @@ describe('injected analyzer', () => {
     });
   });
 
-  it.each([
-    null,
-    undefined,
-    'analyze',
-    12,
-    [],
-    {},
-    { accessibility: null },
-  ])('falls back to default settings for malformed settings %p', (settings) => {
-    expect(analyzeWithSettings(settings)).toEqual(
-      expect.objectContaining({
-        categories: analyzeWithSettings(DEFAULT_SETTINGS).categories,
-      })
-    );
-  });
+  it.each([null, undefined, 'analyze', 12, [], {}, { accessibility: null }])(
+    'falls back to default settings for malformed settings %p',
+    (settings) => {
+      expect(analyzeWithSettings(settings)).toEqual(
+        expect.objectContaining({
+          categories: analyzeWithSettings(DEFAULT_SETTINGS).categories,
+        })
+      );
+    }
+  );
 
   it('cannot be shadowed by a page element named after the global', () => {
     const scope = globalThis as unknown as Record<string, unknown>;
@@ -134,7 +131,9 @@ describe('injected analyzer', () => {
       require('../../src/content/content');
     });
 
-    expect(Object.prototype.hasOwnProperty.call(scope, ANALYZER_GLOBAL)).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(scope, ANALYZER_GLOBAL)).toBe(
+      true
+    );
     expect(typeof injected().analyze).toBe('function');
   });
 });
