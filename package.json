@@ -27,7 +27,7 @@
     "@babel/core": "^8.1.2",
     "@babel/preset-env": "^8.0.7",
     "@testing-library/dom": "^10.4.2",
-    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/jest-dom": "^8.0.0",
     "@types/chrome": "^0.3.7",
     "@types/jest": "^30.0.0",
     "@types/webextension-polyfill": "^0.12.6",
